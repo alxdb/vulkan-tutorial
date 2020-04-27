@@ -8,7 +8,7 @@ CXXFLAGS += $(CFLAGS) -Wall --std=c++17
 
 LINK.o = $(LINK.cc)
 
-all: main tags
+all: main
 
 main: $(OBJ)
 
@@ -16,11 +16,8 @@ window.o: window.hh
 
 main.o: window.o
 
-.PHONY: clean tags
+.PHONY: clean
 
 clean:
 	rm -f $(OBJ)
 	rm -f main
-
-tags:
-	ctags -R .

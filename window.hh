@@ -1,13 +1,14 @@
 #include <vector>
 
 #include <SDL.h>
+#include <vulkan/vulkan.hpp>
 
 class Window {
 	static int window_instances;
+	SDL_Window* window = nullptr;
 public:
-	SDL_Window* window;
 	Window(const char* window_name, int height, int width);
-	Window(Window const&) = delete;
-	void getInstanceExtensions(unsigned int* extension_count, const char** extension_names);
+	std::vector<const char*> getInstanceExtensions();
+	vk::UniqueSurfaceKHR createSurface(vk::UniqueInstance& instance);
 	~Window();
 };

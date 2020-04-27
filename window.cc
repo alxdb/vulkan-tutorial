@@ -11,12 +11,12 @@ int Window::window_instances = 0;
 Window::Window(const char* window_name, int height, int width) {
 	if (window_instances == 0) {
 		if (SDL_Init(SDL_INIT_VIDEO) != 0)  {
-			throw std::runtime_error("Couldn't initialize SDL");
+			throw std::runtime_error("Couldn't initialize SDL :(");
 		}
 	}
 	window_instances++;
 
-	SDL_Window* window = SDL_CreateWindow(
+	window = SDL_CreateWindow(
 		window_name,
 		SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED,
@@ -25,21 +25,36 @@ Window::Window(const char* window_name, int height, int width) {
 		SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP
 	);
 
-	if (window == NULL) {
-		throw std::runtime_error("Couldn't create window");
+	if (window == nullptr) {
+		throw std::runtime_error("Couldn't create window :(");
 	}
 }
 
-void Window::getInstanceExtensions(unsigned int* extension_count, const char** extension_names) {
-	if (!SDL_Vulkan_GetInstanceExtensions(
-			window,
-			extension_count,
-			extension_names)
-	) {
+std::vector<const char*> Window::getInstanceExtensions() {
+	unsigned int extension_count;
+	if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr)) {
 		std::string error_msg = "Couldn't get vulkan instance extensions :(\nSDL says: ";
 		error_msg.append(SDL_GetError());
 		throw std::runtime_error(error_msg);
 	};
+	std::vector<const char*> extensions;
+	extensions.resize(extension_count);
+	if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions.data())) {
+		std::string error_msg = "Couldn't get vulkan instance extensions :(\nSDL says: ";
+		error_msg.append(SDL_GetError());
+		throw std::runtime_error(error_msg);
+	};
+	return extensions;
+}
+
+vk::UniqueSurfaceKHR Window::createSurface(vk::UniqueInstance& instance) {
+	VkSurfaceKHR surface;
+	if (!SDL_Vulkan_CreateSurface(window, instance.get(), &surface)) {
+		std::string error_msg = "Couldn't create vulkan surface :(\nSDL says: ";
+		error_msg.append(SDL_GetError());
+		throw std::runtime_error(error_msg);
+	}
+	return vk::UniqueSurfaceKHR(surface, instance.get());
 }
 
 Window::~Window() {
