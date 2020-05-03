@@ -1,0 +1,32 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "--std=c++17",
+            "-I/usr/include/SDL2",
+            "-D_REENTRANT",
+            "-g",
+            "-o",
+            "window.o",
+            "../window.cc"
+        ],
+        "directory": "/home/alxdb/scratch/vulkan_tutorial/build",
+        "file": "../window.cc"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "--std=c++17",
+            "-I/usr/include/SDL2",
+            "-D_REENTRANT",
+            "-g",
+            "-o",
+            "main.o",
+            "../main.cc"
+        ],
+        "directory": "/home/alxdb/scratch/vulkan_tutorial/build",
+        "file": "../main.cc"
+    }
+]
