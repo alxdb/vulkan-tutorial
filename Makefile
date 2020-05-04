@@ -1,4 +1,4 @@
-SRC := main.cc window.cc
+SRC := main.cc window.cc vulkan_app.cc
 PKG := sdl2 vulkan
 SHADERS := main.vert.glsl main.frag.glsl
 BUILD_DIR := build

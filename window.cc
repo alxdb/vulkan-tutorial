@@ -20,9 +20,9 @@ Window::Window(const char* window_name, int height, int width) {
 		window_name,
 		SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED,
-		0,
-		0,
-		SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN_DESKTOP
+		height,
+		width,
+		SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE
 	);
 
 	if (window == nullptr) {
@@ -30,15 +30,14 @@ Window::Window(const char* window_name, int height, int width) {
 	}
 }
 
-std::vector<const char*> Window::getInstanceExtensions() {
+std::vector<const char*> Window::get_instance_extensions() const {
 	unsigned int extension_count;
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, nullptr)) {
 		std::string error_msg = "Couldn't get vulkan instance extensions :(\nSDL says: ";
 		error_msg.append(SDL_GetError());
 		throw std::runtime_error(error_msg);
 	};
-	std::vector<const char*> extensions;
-	extensions.resize(extension_count);
+	std::vector<const char*> extensions(extension_count);
 	if (!SDL_Vulkan_GetInstanceExtensions(window, &extension_count, extensions.data())) {
 		std::string error_msg = "Couldn't get vulkan instance extensions :(\nSDL says: ";
 		error_msg.append(SDL_GetError());
@@ -47,7 +46,7 @@ std::vector<const char*> Window::getInstanceExtensions() {
 	return extensions;
 }
 
-vk::UniqueSurfaceKHR Window::createSurface(vk::UniqueInstance& instance) {
+vk::UniqueSurfaceKHR Window::create_surface(vk::UniqueInstance& instance) {
 	VkSurfaceKHR surface;
 	if (!SDL_Vulkan_CreateSurface(window, instance.get(), &surface)) {
 		std::string error_msg = "Couldn't create vulkan surface :(\nSDL says: ";

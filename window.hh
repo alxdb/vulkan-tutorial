@@ -8,7 +8,7 @@ class Window {
 	SDL_Window* window = nullptr;
 public:
 	Window(const char* window_name, int height, int width);
-	std::vector<const char*> getInstanceExtensions();
-	vk::UniqueSurfaceKHR createSurface(vk::UniqueInstance& instance);
+	std::vector<const char*> get_instance_extensions() const;
+	vk::UniqueSurfaceKHR create_surface(vk::UniqueInstance& instance);
 	~Window();
 };
