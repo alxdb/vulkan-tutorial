@@ -265,6 +265,7 @@ std::vector<vk::UniqueFramebuffer> create_frame_buffers(
 		);
 		swapchain_frame_buffers.push_back(device->createFramebufferUnique(frame_buffer_create_info));
 	}
+	return swapchain_frame_buffers;
 }
 
 std::vector<vk::UniqueCommandBuffer> create_command_buffers(
