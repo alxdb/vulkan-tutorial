@@ -1,12 +1,14 @@
 #include "window.hh"
+#include "vertex.hh"
 
 class VulkanApp {
 	Window window;
 	vk::UniqueInstance instance;
+	vk::UniqueSurfaceKHR surface;
 	// Device
 	vk::PhysicalDevice physical_device;
+	uint32_t graphics_queue_family;
 	vk::UniqueDevice device;
-	vk::UniqueSurfaceKHR surface;
 	vk::Queue graphics_queue;
 	// Swapchain
 	vk::UniqueSwapchainKHR swapchain;
@@ -18,6 +20,10 @@ class VulkanApp {
 	vk::UniqueShaderModule frag_shader;
 	vk::UniquePipelineLayout pipeline_layout;
 	vk::UniquePipeline graphics_pipeline;
+	// Vertex Buffer
+	std::vector<Vertex> vertices;
+	vk::UniqueBuffer vertex_buffer;
+	vk::UniqueDeviceMemory vertex_memory;
 	// Commands
 	vk::UniqueCommandPool command_pool;
 	std::vector<vk::UniqueCommandBuffer> command_buffers;
@@ -34,6 +40,11 @@ class VulkanApp {
 	bool poll_events();
 public:
 	void run();
-	explicit VulkanApp(const char* application_name, bool debug = true);
+	explicit VulkanApp(
+		const char* application_name,
+		std::vector<Vertex> init_vertices = {},
+		bool debug = true
+	);
+	void set_vertices(const std::vector<Vertex>& vertices) { this->vertices = vertices; };
 	~VulkanApp();
 };

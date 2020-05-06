@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vulkan/vulkan.hpp>
 #include "window.hh"
+#include "vertex.hh"
 
 vk::UniqueInstance create_instance(const Window& window, const char* application_name, bool debug) {
 	std::vector<const char *> extension_names = window.get_instance_extensions();
@@ -164,14 +165,23 @@ vk::UniquePipeline create_pipeline(
 	const vk::UniqueShaderModule& vert_shader,
 	const vk::UniqueShaderModule& frag_shader,
 	const vk::UniquePipelineLayout& pipeline_layout,
-	const vk::UniqueRenderPass& render_pass
+	const vk::UniqueRenderPass& render_pass,
+	const std::optional<vk::VertexInputBindingDescription>& binding_description = {},
+	const std::optional<std::vector<vk::VertexInputAttributeDescription>> attribute_descriptions = {}
 ) {
 	// Shaders
 	vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {
 		{{}, vk::ShaderStageFlagBits::eVertex, vert_shader.get(), "main"},
 		{{}, vk::ShaderStageFlagBits::eFragment, frag_shader.get(), "main"}
 	};
+	// Vertex Input
 	vk::PipelineVertexInputStateCreateInfo vertex_input_state;
+	if (binding_description.has_value() && attribute_descriptions.has_value()) {
+		vertex_input_state.setVertexBindingDescriptionCount(1);
+		vertex_input_state.setPVertexBindingDescriptions(&binding_description.value());
+		vertex_input_state.setVertexAttributeDescriptionCount(attribute_descriptions->size());
+		vertex_input_state.setPVertexAttributeDescriptions(attribute_descriptions->data());
+	}
 	vk::PipelineInputAssemblyStateCreateInfo input_assembly_state(
 		{},
 		vk::PrimitiveTopology::eTriangleList,
@@ -274,7 +284,9 @@ std::vector<vk::UniqueCommandBuffer> create_command_buffers(
 	const vk::UniqueRenderPass& render_pass,
 	const vk::UniquePipeline& graphics_pipeline,
 	const vk::SurfaceCapabilitiesKHR& surface_capabilites,
-	const std::vector<vk::UniqueFramebuffer>& swapchain_frame_buffers
+	const std::vector<vk::UniqueFramebuffer>& swapchain_frame_buffers,
+	const vk::UniqueBuffer& vertex_buffer,
+	const size_t n_vertices
 ) {
 	vk::CommandBufferAllocateInfo command_buffer_allocate_info(
 		command_pool.get(),
@@ -301,9 +313,60 @@ std::vector<vk::UniqueCommandBuffer> create_command_buffers(
 			vk::PipelineBindPoint::eGraphics,
 			graphics_pipeline.get()
 		);
-		command_buffers[i]->draw(3, 1, 0, 0);
+		command_buffers[i]->bindVertexBuffers(
+			0,
+			{vertex_buffer.get()},
+			{0}
+		);
+		command_buffers[i]->draw(n_vertices, 1, 0, 0);
 		command_buffers[i]->endRenderPass();
 		command_buffers[i]->end();
 	}
 	return command_buffers;
+}
+
+uint32_t find_memory_type(
+	const vk::PhysicalDevice& physical_device,
+	uint32_t type_filter,
+	vk::MemoryPropertyFlags properties) {
+	vk::PhysicalDeviceMemoryProperties memory_properties = physical_device.getMemoryProperties();
+	for (uint32_t i = 0; i < memory_properties.memoryTypeCount; i++) {
+		if ((type_filter & (1 << i)) &&
+			(memory_properties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+	throw std::runtime_error("failed to find memory type");
+}
+
+std::pair<vk::UniqueBuffer, vk::UniqueDeviceMemory> create_vertex_buffer(
+	const vk::PhysicalDevice& physical_device,
+	const vk::UniqueDevice& device,
+	std::vector<Vertex> vertices
+) {
+	vk::BufferCreateInfo buffer_create_info(
+		{},
+		sizeof(vertices[0]) * vertices.size(),
+		vk::BufferUsageFlagBits::eVertexBuffer,
+		vk::SharingMode::eExclusive
+	);
+	vk::UniqueBuffer buffer = device->createBufferUnique(buffer_create_info);
+	vk::MemoryRequirements memory_requirements = device->getBufferMemoryRequirements(buffer.get());
+	vk::MemoryAllocateInfo memory_allocate_info(
+		memory_requirements.size,
+		find_memory_type(
+			physical_device,
+			memory_requirements.memoryTypeBits,
+			vk::MemoryPropertyFlagBits::eHostVisible |
+			vk::MemoryPropertyFlagBits::eHostCoherent
+		)
+	);
+	vk::UniqueDeviceMemory device_memory = device->allocateMemoryUnique(memory_allocate_info);
+	device->bindBufferMemory(buffer.get(), device_memory.get(), 0);
+
+	void* data = device->mapMemory(device_memory.get(), 0, buffer_create_info.size);
+	memcpy(data, vertices.data(), (size_t) buffer_create_info.size);
+	device->unmapMemory(device_memory.get());
+
+	return std::make_pair(std::move(buffer), std::move(device_memory));
 }

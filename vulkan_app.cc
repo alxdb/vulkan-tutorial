@@ -18,18 +18,64 @@ void VulkanApp::run() {
 	}
 }
 
+VulkanApp::VulkanApp(
+	const char* application_name,
+	std::vector<Vertex> init_vertices,
+	bool debug
+) : window(application_name, 1024, 768),
+	vertices(init_vertices),
+	instance(create_instance(window, application_name, debug)),
+	surface(window.create_surface(instance)),
+	physical_device(instance->enumeratePhysicalDevices().front()) ,
+	graphics_queue_family(find_graphics_queue(physical_device, instance, surface)),
+	device(create_logical_device(physical_device, graphics_queue_family)),
+	graphics_queue(device->getQueue(graphics_queue_family, 0)),
+	vert_shader(create_shader(device, "build/main.vert.spv")),
+	frag_shader(create_shader(device, "build/main.frag.spv")),
+	pipeline_layout(device->createPipelineLayoutUnique({})),
+	command_pool(device->createCommandPoolUnique({{}, graphics_queue_family}))
+{
+	generate_swapchain();
+
+	// Sync Objects
+	image_available_semaphores.reserve(max_frames_in_flight);
+	render_finished_semaphores.reserve(max_frames_in_flight);
+	in_flight_fences.reserve(max_frames_in_flight);
+	for (int i = 0; i < max_frames_in_flight; i++) {
+		image_available_semaphores.push_back(device->createSemaphoreUnique({}));
+		render_finished_semaphores.push_back(device->createSemaphoreUnique({}));
+		in_flight_fences.push_back(device->createFenceUnique({vk::FenceCreateFlagBits::eSignaled}));
+	}
+	images_in_flight.resize(swapchain_image_views.size(), nullptr);
+}
+
 VulkanApp::~VulkanApp() {
 	device->waitIdle();
 };
 
 void VulkanApp::render() {
 	device->waitForFences({in_flight_fences[current_frame].get()}, true, UINT64_MAX);
-	uint32_t image_index = device->acquireNextImageKHR(
+
+	uint32_t image_index;
+	vk::Result aquire_image_result = device->acquireNextImageKHR(
 		swapchain.get(),
 		UINT64_MAX,
 		image_available_semaphores[current_frame].get(),
-		nullptr
+		nullptr,
+		&image_index
 	);
+
+	switch (aquire_image_result) {
+		case vk::Result::eErrorOutOfDateKHR:
+			generate_swapchain();
+			return;
+		default:
+			if (aquire_image_result != vk::Result::eSuccess &&
+				aquire_image_result != vk::Result::eSuboptimalKHR) {
+				vk::throwResultException(aquire_image_result, "");
+			}
+	}
+
 	if (images_in_flight[image_index] != (vk::Fence) nullptr) {
 		device->waitForFences({images_in_flight[image_index]}, true, UINT64_MAX);
 	}
@@ -59,35 +105,6 @@ void VulkanApp::render() {
 	current_frame = (current_frame + 1) % max_frames_in_flight;
 }
 
-VulkanApp::VulkanApp(const char* application_name, bool debug) : window(application_name, 0, 0) {
-	instance = create_instance(window, application_name, debug);
-	surface = window.create_surface(instance);
-
-	physical_device = instance->enumeratePhysicalDevices().front();
-	uint32_t graphics_queue_family = find_graphics_queue(physical_device, instance, surface);
-	device = create_logical_device(physical_device, graphics_queue_family);
-	graphics_queue = device->getQueue(graphics_queue_family, 0);
-
-	command_pool = device->createCommandPoolUnique({{}, graphics_queue_family});
-
-	pipeline_layout = device->createPipelineLayoutUnique({});
-	vert_shader = create_shader(device, "build/main.vert.spv");
-	frag_shader = create_shader(device, "build/main.frag.spv");
-
-	generate_swapchain();
-
-	// Sync Objects
-	image_available_semaphores.reserve(max_frames_in_flight);
-	render_finished_semaphores.reserve(max_frames_in_flight);
-	in_flight_fences.reserve(max_frames_in_flight);
-	for (int i = 0; i < max_frames_in_flight; i++) {
-		image_available_semaphores.push_back(device->createSemaphoreUnique({}));
-		render_finished_semaphores.push_back(device->createSemaphoreUnique({}));
-		in_flight_fences.push_back(device->createFenceUnique({vk::FenceCreateFlagBits::eSignaled}));
-	}
-	images_in_flight.resize(swapchain_image_views.size(), nullptr);
-}
-
 void VulkanApp::generate_swapchain() {
 	device->waitIdle();
 
@@ -107,7 +124,9 @@ void VulkanApp::generate_swapchain() {
 		vert_shader,
 		frag_shader,
 		pipeline_layout,
-		render_pass
+		render_pass,
+		Vertex::binding_description,
+		Vertex::attribute_descriptions
 	);
 	swapchain_frame_buffers = create_frame_buffers(
 		device,
@@ -115,12 +134,19 @@ void VulkanApp::generate_swapchain() {
 		surface_capabilities,
 		swapchain_image_views
 	);
+	std::tie(vertex_buffer, vertex_memory) = create_vertex_buffer(
+		physical_device,
+		device,
+		vertices
+	);
 	command_buffers = create_command_buffers(
 		device,
 		command_pool,
 		render_pass,
 		graphics_pipeline,
 		surface_capabilities,
-		swapchain_frame_buffers
+		swapchain_frame_buffers,
+		vertex_buffer,
+		vertices.size()
 	);
 };
