@@ -39,12 +39,13 @@ class VulkanApp {
 	void generate_swapchain();
 	bool poll_events();
 public:
+	virtual void update() {};
 	void run();
 	explicit VulkanApp(
 		const char* application_name,
 		std::vector<Vertex> init_vertices = {},
 		bool debug = true
 	);
-	void set_vertices(const std::vector<Vertex>& vertices) { this->vertices = vertices; };
-	~VulkanApp();
+	void set_vertices(const std::vector<Vertex>& vertices) { this->vertices = vertices; generate_swapchain(); };
+	virtual ~VulkanApp();
 };

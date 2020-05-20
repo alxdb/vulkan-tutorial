@@ -1,5 +1,7 @@
 #include "vulkan_app.hh"
 #include "vulkan_utils.hh"
+#include "main.frag.spv.h"
+#include "main.vert.spv.h"
 
 bool VulkanApp::poll_events() {
 	SDL_Event e;
@@ -14,6 +16,7 @@ bool VulkanApp::poll_events() {
 
 void VulkanApp::run() {
 	while (poll_events()) {
+		update();
 		render();
 	}
 }
@@ -30,8 +33,8 @@ VulkanApp::VulkanApp(
 	graphics_queue_family(find_graphics_queue(physical_device, instance, surface)),
 	device(create_logical_device(physical_device, graphics_queue_family)),
 	graphics_queue(device->getQueue(graphics_queue_family, 0)),
-	vert_shader(create_shader(device, "build/main.vert.spv")),
-	frag_shader(create_shader(device, "build/main.frag.spv")),
+	vert_shader(device->createShaderModuleUnique({{}, main_vert_spv_len, reinterpret_cast<const uint32_t *>(main_vert_spv)})),
+	frag_shader(device->createShaderModuleUnique({{}, main_frag_spv_len, reinterpret_cast<const uint32_t *>(main_frag_spv)})),
 	pipeline_layout(device->createPipelineLayoutUnique({})),
 	command_pool(device->createCommandPoolUnique({{}, graphics_queue_family}))
 {

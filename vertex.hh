@@ -9,4 +9,6 @@ struct Vertex {
 
 	static const vk::VertexInputBindingDescription binding_description;
 	static const std::vector<vk::VertexInputAttributeDescription> attribute_descriptions;
+
+	void rotate(glm::vec3 axis, float angle);
 };
