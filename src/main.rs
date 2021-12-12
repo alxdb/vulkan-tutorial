@@ -1,17 +1,13 @@
 use winit::{
-    dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
 };
+
+mod graphics;
 
 fn main() {
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(1920, 1080))
-        .with_resizable(false)
-        .build(&event_loop)
-        .unwrap();
+    let context = graphics::Context::new(&event_loop);
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
