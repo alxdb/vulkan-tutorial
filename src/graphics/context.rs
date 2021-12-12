@@ -13,9 +13,10 @@ use vulkano::{
         physical::{PhysicalDevice, PhysicalDeviceType},
         Device, DeviceExtensions, Features, Queue,
     },
-    image::{ImageUsage, SwapchainImage},
+    image::{view::ImageView, ImageAccess, ImageUsage, SwapchainImage},
     instance::Instance,
-    render_pass::RenderPass,
+    pipeline::graphics::viewport::Viewport,
+    render_pass::{Framebuffer, RenderPass},
     swapchain::{Surface, Swapchain},
     Version,
 };
@@ -27,7 +28,9 @@ pub struct Context {
     pub queue: Arc<Queue>,
     pub swapchain: Arc<Swapchain<Window>>,
     pub images: Vec<Arc<SwapchainImage<Window>>>,
-    pub render_pass: RenderPass,
+    pub render_pass: Arc<RenderPass>,
+    pub viewport: Viewport,
+    pub framebuffers: Vec<Arc<Framebuffer>>,
 }
 
 impl Context {
@@ -105,6 +108,24 @@ impl Context {
         )
         .unwrap();
 
+        let image_dimensions = images.first().unwrap().dimensions().width_height();
+        let viewport = Viewport {
+            origin: [0.0, 0.0],
+            dimensions: [image_dimensions[0] as f32, image_dimensions[1] as f32],
+            depth_range: 0.0..1.0,
+        };
+
+        let framebuffers = images
+            .iter()
+            .map(|image| {
+                Framebuffer::start(render_pass.clone())
+                    .add(ImageView::new(image.clone()).unwrap())
+                    .unwrap()
+                    .build()
+                    .unwrap()
+            })
+            .collect();
+
         Context {
             instance,
             surface,
@@ -113,6 +134,8 @@ impl Context {
             swapchain,
             images,
             render_pass,
+            viewport,
+            framebuffers,
         }
     }
 }
