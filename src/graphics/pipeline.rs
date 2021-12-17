@@ -34,6 +34,8 @@ mod fs {
     }
 }
 
+pub type PushConstants = vs::ty::PushConstantData;
+
 pub struct Pipeline {
     pub pipeline: Arc<GraphicsPipeline>,
 }

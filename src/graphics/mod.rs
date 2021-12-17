@@ -8,12 +8,13 @@ use pipeline::Pipeline;
 use vulkano::{
     buffer::{CpuAccessibleBuffer, TypedBufferAccess},
     command_buffer::{AutoCommandBufferBuilder, CommandBufferUsage, SubpassContents},
+    pipeline::Pipeline as VulkanoPipeline,
     swapchain,
     sync::GpuFuture,
 };
 use winit::event_loop::EventLoop;
 
-pub use pipeline::Vertex;
+pub use pipeline::{PushConstants, Vertex};
 
 pub struct Renderer {
     pub context: Context,
@@ -27,7 +28,11 @@ impl Renderer {
         Self { context, pipeline }
     }
 
-    pub fn render(&self, vertex_buffer: Arc<CpuAccessibleBuffer<[pipeline::Vertex]>>) {
+    pub fn render(
+        &self,
+        vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
+        push_constants: PushConstants,
+    ) {
         let (image_num, _, acquire_future) =
             swapchain::acquire_next_image(self.context.swapchain.clone(), None).unwrap();
 
@@ -38,6 +43,7 @@ impl Renderer {
         )
         .unwrap();
         command_buffer_builder
+            .push_constants(self.pipeline.pipeline.layout().clone(), 0, push_constants)
             .begin_render_pass(
                 self.context.framebuffers[image_num].clone(),
                 SubpassContents::Inline,

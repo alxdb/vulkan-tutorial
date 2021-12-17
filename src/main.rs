@@ -1,4 +1,4 @@
-use graphics::Vertex;
+use graphics::{PushConstants, Vertex};
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 use winit::{
     event::{Event, WindowEvent},
@@ -31,7 +31,12 @@ fn main() {
                 event: WindowEvent::CloseRequested,
                 ..
             } => *control_flow = ControlFlow::Exit,
-            Event::RedrawEventsCleared => renderer.render(triangle_vertices.clone()),
+            Event::RedrawEventsCleared => renderer.render(
+                triangle_vertices.clone(),
+                PushConstants {
+                    transform: [0.5, 0.5],
+                },
+            ),
             _ => (),
         }
     });
