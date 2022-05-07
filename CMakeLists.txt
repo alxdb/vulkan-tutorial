@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.23)
 project(vulkan_tutorial)
 
-set(CMAKE_CXX_STANDARD_REQUIRED 17)
+set(CMAKE_CXX_STANDARD_REQUIRED 20)
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_package(glfw3 3.3 REQUIRED)
+
+add_subdirectory(lib)
 
 set(SHADER_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/shaders)
 set(SHADER_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/shaders)
@@ -36,4 +38,5 @@ endforeach()
 add_custom_target(spirv ALL DEPENDS ${SHADER_BINARIES})
 
 add_executable(main main.cpp ${SHADERS})
+target_link_libraries(main PRIVATE vkfw glfw)
 add_dependencies(main spirv)
