@@ -1,0 +1,2 @@
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/${SHADER}.txt SHADER_BIN_TXT)
+configure_file(${SHADER_H} ${SHADER}.h)

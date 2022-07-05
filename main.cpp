@@ -1,11 +1,22 @@
-#include <iostream>
+#include <graphics.hpp>
 
-#include "config.h"
+struct App {
+  const vkfw::WindowHints windowHints = {
+      false, // resizable
+  };
+  vkfw::UniqueHandle<vkfw::Instance> vkfw = vkfw::initUnique();
+  vkfw::UniqueHandle<vkfw::Window> window =
+      vkfw::createWindowUnique(1920, 1080, "vulkan tutorial", windowHints);
 
-using namespace std;
+  Graphics graphics;
+
+  App() : graphics(*window) {}
+};
 
 int main(int argc, char *argv[]) {
-    cout << "Hello World!\n";
-
-    return 0;
+  App app;
+  while (!app.window->shouldClose()) {
+    vkfw::pollEvents();
+  }
+  return 0;
 }

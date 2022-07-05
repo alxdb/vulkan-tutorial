@@ -1,0 +1,4 @@
+ColumnLimit: 120
+PackConstructorInitializers: NextLine
+BinPackParameters: False
+BinPackArguments: False
