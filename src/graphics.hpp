@@ -41,12 +41,17 @@ private:
   vk::raii::SwapchainKHR swapchain;
   std::vector<VkImage> swapchainImages;
   std::vector<vk::raii::ImageView> imageViews;
+  vk::raii::PipelineLayout pipelineLayout;
+  vk::raii::RenderPass renderPass; // set by createPipeline
+  vk::raii::Pipeline pipeline;
 
-  vk::raii::Instance createInstance();
+  vk::raii::Instance createInstance() const;
   vk::raii::PhysicalDevice pickPhysicalDevice();
-  vk::raii::Device createDevice();
+  vk::raii::Device createDevice() const;
   vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &);
-  std::vector<vk::raii::ImageView> createImageViews();
+  std::vector<vk::raii::ImageView> createImageViews() const;
+  vk::raii::RenderPass createRenderPass() const;
+  vk::raii::Pipeline createPipeline();
 
 public:
   Graphics(const vkfw::Window &window)
@@ -57,5 +62,8 @@ public:
         queue(device.getQueue(queueFamilyIndex, 0)),
         swapchain(createSwapchain(window)),
         swapchainImages(swapchain.getImages()),
-        imageViews(createImageViews()) {}
+        imageViews(createImageViews()),
+        pipelineLayout(device.createPipelineLayout({})),
+        renderPass(createRenderPass()),
+        pipeline(createPipeline()) {}
 };

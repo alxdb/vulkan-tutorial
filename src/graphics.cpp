@@ -5,6 +5,7 @@
 #include <ranges>
 #include <unordered_set>
 
+#include "fragment_shader.h"
 #include "vertex_shader.h"
 
 const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
@@ -16,7 +17,7 @@ const std::array<const char *, 1> REQUIRED_LAYER_NAMES = {
 #endif
 };
 
-vk::raii::Instance Graphics::createInstance() {
+vk::raii::Instance Graphics::createInstance() const {
   auto requiredExtensions = vkfw::getRequiredInstanceExtensions();
   auto applicationInfo = vk::ApplicationInfo{.apiVersion = VK_API_VERSION_1_1};
 
@@ -66,7 +67,7 @@ vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
   }
 }
 
-vk::raii::Device Graphics::createDevice() {
+vk::raii::Device Graphics::createDevice() const {
   std::array<float, 1> queuePriorities{1.0};
   auto queueCreateInfos = {
       vk::DeviceQueueCreateInfo{
@@ -140,7 +141,7 @@ vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
   return result;
 }
 
-std::vector<vk::raii::ImageView> Graphics::createImageViews() {
+std::vector<vk::raii::ImageView> Graphics::createImageViews() const {
   std::vector<vk::raii::ImageView> result;
   result.reserve(swapchainImages.size());
 
@@ -161,4 +162,120 @@ std::vector<vk::raii::ImageView> Graphics::createImageViews() {
   });
 
   return result;
+}
+
+vk::raii::RenderPass Graphics::createRenderPass() const {
+  std::array<vk::AttachmentDescription, 1> attachments = {
+      vk::AttachmentDescription{
+          .format = surfaceFormat.format,
+          .samples = vk::SampleCountFlagBits::e1,
+          .loadOp = vk::AttachmentLoadOp::eClear,
+          .storeOp = vk::AttachmentStoreOp::eStore,
+          .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+          .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+          .initialLayout = vk::ImageLayout::eUndefined,
+          .finalLayout = vk::ImageLayout::ePresentSrcKHR,
+      },
+  };
+  std::array<vk::AttachmentReference, 1> colorAttachmentReferences = {
+      vk::AttachmentReference{
+          .attachment = 0,
+          .layout = vk::ImageLayout::eColorAttachmentOptimal,
+      },
+  };
+  std::array<vk::SubpassDescription, 1> subpasses = {
+      vk::SubpassDescription{
+          .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
+      }
+          .setColorAttachments(colorAttachmentReferences),
+  };
+
+  return device.createRenderPass(vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses));
+}
+
+vk::raii::Pipeline Graphics::createPipeline() {
+  auto vertexShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(vertex_shader_code));
+  auto fragmentShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(fragment_shader_code));
+  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
+      vk::PipelineShaderStageCreateInfo{
+          .stage = vk::ShaderStageFlagBits::eVertex,
+          .module = *vertexShader,
+          .pName = "main",
+      },
+      vk::PipelineShaderStageCreateInfo{
+          .stage = vk::ShaderStageFlagBits::eFragment,
+          .module = *fragmentShader,
+          .pName = "main",
+      },
+  };
+
+  // fixed functions
+  std::array<vk::DynamicState, 2> dynamicStates = {
+      vk::DynamicState::eViewport,
+      vk::DynamicState::eScissor,
+  };
+  auto dynamicState = vk::PipelineDynamicStateCreateInfo{}.setDynamicStates(dynamicStates);
+  auto vertexInput = vk::PipelineVertexInputStateCreateInfo{};
+  auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo{
+      .topology = vk::PrimitiveTopology::eTriangleList,
+      .primitiveRestartEnable = false,
+  };
+  // TODO: Do these need to be here?
+  // auto viewport = vk::Viewport{
+  //     .x = 0.0f,
+  //     .y = 0.0f,
+  //     .width = static_cast<float>(swapExtent.width),
+  //     .height = static_cast<float>(swapExtent.height),
+  //     .minDepth = 0.0f,
+  //     .maxDepth = 1.0f,
+  // };
+  // auto scissor = vk::Rect2D{
+  //     .offset = {0, 0},
+  //     .extent = swapExtent,
+  // };
+  auto viewportState = vk::PipelineViewportStateCreateInfo{
+      .viewportCount = 1,
+      .scissorCount = 1,
+  };
+  auto rasterizer = vk::PipelineRasterizationStateCreateInfo{
+      .depthClampEnable = false,
+      .rasterizerDiscardEnable = false,
+      .polygonMode = vk::PolygonMode::eFill,
+      .cullMode = vk::CullModeFlagBits::eBack,
+      .frontFace = vk::FrontFace::eClockwise,
+      .depthBiasEnable = false,
+      .lineWidth = 1.0f,
+  };
+  auto multisampling = vk::PipelineMultisampleStateCreateInfo{
+      .rasterizationSamples = vk::SampleCountFlagBits::e1,
+      .sampleShadingEnable = false,
+  };
+  auto colorBlendAttachment = std::array<vk::PipelineColorBlendAttachmentState, 1>{
+      vk::PipelineColorBlendAttachmentState{
+          .blendEnable = false,
+          .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                            vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+      },
+  };
+  auto colorBlending =
+      vk::PipelineColorBlendStateCreateInfo{
+          .logicOpEnable = false,
+      }
+          .setAttachments(colorBlendAttachment);
+
+  auto graphicsPipelineCreateInfo =
+      vk::GraphicsPipelineCreateInfo{
+          .pVertexInputState = &vertexInput,
+          .pInputAssemblyState = &inputAssembly,
+          .pViewportState = &viewportState,
+          .pRasterizationState = &rasterizer,
+          .pMultisampleState = &multisampling,
+          .pColorBlendState = &colorBlending,
+          .pDynamicState = &dynamicState,
+          .layout = *pipelineLayout,
+          .renderPass = *renderPass,
+          .subpass = 0,
+      }
+          .setStages(shaderStages);
+  return device.createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
 }

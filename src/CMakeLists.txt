@@ -1,5 +1,5 @@
 add_subdirectory(shaders)
 
 add_library(${PROJECT_NAME} graphics.cpp graphics.hpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC vkfw vertex_shader)
+target_link_libraries(${PROJECT_NAME} PUBLIC vkfw shaders)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
 #include <cstdint>
 
-const std::vector<uint32_t> ${SHADER}_bin = ${SHADER_BIN_TXT};
+const uint32_t ${SHADER}_code[] = {
+${SHADER_BIN_TXT}};

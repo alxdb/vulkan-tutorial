@@ -12,4 +12,4 @@ add_subdirectory(lib)
 add_subdirectory(src)
 
 add_executable(main main.cpp)
-target_link_libraries(main PRIVATE glfw ${PROJECT_NAME} Vulkan::Vulkan)
+target_link_libraries(main PRIVATE glfw ${PROJECT_NAME})
