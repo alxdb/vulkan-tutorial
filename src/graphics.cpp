@@ -7,7 +7,7 @@
 
 #include "vertex_shader.h"
 
-const std::vector<const char *> REQUIRED_DEVICE_EXTENSION_NAMES = {
+const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
 
@@ -84,7 +84,6 @@ vk::raii::Device Graphics::createDevice() {
 }
 
 vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
-  vk::SurfaceFormatKHR surfaceFormat;
   if (auto it = std::ranges::find(swapchainSupportDetails.formats,
                                   vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear});
       it != swapchainSupportDetails.formats.end()) {
@@ -101,7 +100,6 @@ vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
     presentMode = vk::PresentModeKHR::eFifo;
   }
 
-  vk::Extent2D swapExtent;
   if (swapchainSupportDetails.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
     swapExtent = swapchainSupportDetails.capabilities.currentExtent;
   } else {
@@ -139,5 +137,27 @@ vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
       .oldSwapchain = swapchainCreated ? *swapchain : VK_NULL_HANDLE,
   });
   swapchainCreated = true;
+  return result;
+}
+
+std::vector<vk::raii::ImageView> Graphics::createImageViews() {
+  std::vector<vk::raii::ImageView> result;
+  result.reserve(swapchainImages.size());
+
+  std::ranges::transform(swapchainImages, std::back_inserter(result), [&](const auto &image) {
+    return device.createImageView(vk::ImageViewCreateInfo{
+        .image = image,
+        .viewType = vk::ImageViewType::e2D,
+        .format = surfaceFormat.format,
+          .subresourceRange = {
+          .aspectMask = vk::ImageAspectFlagBits::eColor,
+          .baseMipLevel = 0,
+          .levelCount = 1,
+          .baseArrayLayer = 0,
+          .layerCount = 1,
+        }
+    });
+  });
+
   return result;
 }
