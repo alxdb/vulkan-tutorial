@@ -10,20 +10,21 @@
 const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 };
+const std::array<const char *, 1> REQUIRED_LAYER_NAMES = {
+#ifndef NDEBUG
+    "VK_LAYER_KHRONOS_validation",
+#endif
+};
 
 vk::raii::Instance Graphics::createInstance() {
-  const std::array<const char *, 1> requiredLayers = {
-      "VK_LAYER_KHRONOS_validation",
-  };
   auto requiredExtensions = vkfw::getRequiredInstanceExtensions();
-
-  vk::ApplicationInfo applicationInfo{.apiVersion = VK_API_VERSION_1_1};
+  auto applicationInfo = vk::ApplicationInfo{.apiVersion = VK_API_VERSION_1_1};
 
   return {
       context,
       vk::InstanceCreateInfo{.pApplicationInfo = &applicationInfo}
           .setPEnabledExtensionNames(requiredExtensions)
-          .setPEnabledLayerNames(requiredLayers),
+          .setPEnabledLayerNames(REQUIRED_LAYER_NAMES),
   };
 }
 
@@ -58,11 +59,10 @@ vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
   };
 
   auto physicalDevices = instance.enumeratePhysicalDevices();
-  auto physicalDevice = std::ranges::find_if(physicalDevices, isSuitable);
-  if (physicalDevice == physicalDevices.end()) {
-    throw std::runtime_error("No suitabled devices");
+  if (auto result = std::ranges::find_if(physicalDevices, isSuitable); result != physicalDevices.end()) {
+    return *result;
   } else {
-    return *physicalDevice;
+    throw std::runtime_error("No suitabled devices");
   }
 }
 
@@ -149,13 +149,14 @@ std::vector<vk::raii::ImageView> Graphics::createImageViews() {
         .image = image,
         .viewType = vk::ImageViewType::e2D,
         .format = surfaceFormat.format,
-          .subresourceRange = {
-          .aspectMask = vk::ImageAspectFlagBits::eColor,
-          .baseMipLevel = 0,
-          .levelCount = 1,
-          .baseArrayLayer = 0,
-          .layerCount = 1,
-        }
+        .subresourceRange =
+            {
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
     });
   });
 
