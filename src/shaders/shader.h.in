@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 const uint32_t ${SHADER}_code[] = {
 ${SHADER_BIN_TXT}};

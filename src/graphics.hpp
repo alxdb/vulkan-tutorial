@@ -42,7 +42,7 @@ private:
   std::vector<VkImage> swapchainImages;
   std::vector<vk::raii::ImageView> imageViews;
   vk::raii::PipelineLayout pipelineLayout;
-  vk::raii::RenderPass renderPass; // set by createPipeline
+  vk::raii::RenderPass renderPass;
   vk::raii::Pipeline pipeline;
 
   vk::raii::Instance createInstance() const;

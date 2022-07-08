@@ -1,6 +1,5 @@
 #include "graphics.hpp"
 
-#include <iostream>
 #include <iterator>
 #include <ranges>
 #include <unordered_set>
@@ -30,8 +29,8 @@ vk::raii::Instance Graphics::createInstance() const {
 }
 
 vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
-  auto isSuitable = [&](const vk::raii::PhysicalDevice &physicalDevice) {
-    auto deviceExtensionsProperties = physicalDevice.enumerateDeviceExtensionProperties();
+  auto isSuitable = [&](const vk::raii::PhysicalDevice &pd) {
+    auto deviceExtensionsProperties = pd.enumerateDeviceExtensionProperties();
 
     std::unordered_set<std::string> availableExtensionNames;
     std::ranges::transform(deviceExtensionsProperties,
@@ -42,12 +41,12 @@ vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
         return false;
       }
     }
-    swapchainSupportDetails = {physicalDevice, surface};
+    swapchainSupportDetails = {pd, surface};
     if (swapchainSupportDetails.formats.empty() || swapchainSupportDetails.presentModes.empty()) {
       return false;
     }
 
-    auto queueFamilies = physicalDevice.getQueueFamilyProperties();
+    auto queueFamilies = pd.getQueueFamilyProperties();
     auto queueFamily = std::ranges::find_if(queueFamilies, [](const auto &queueFamily) {
       return (bool)(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics);
     });
@@ -56,7 +55,7 @@ vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
     }
 
     queueFamilyIndex = std::distance(queueFamilies.begin(), queueFamily);
-    return static_cast<bool>(physicalDevice.getSurfaceSupportKHR(queueFamilyIndex, *surface));
+    return static_cast<bool>(pd.getSurfaceSupportKHR(queueFamilyIndex, *surface));
   };
 
   auto physicalDevices = instance.enumeratePhysicalDevices();
