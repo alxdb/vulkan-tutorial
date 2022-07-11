@@ -26,7 +26,9 @@ struct SwapchainSupportDetails {
 };
 
 class Graphics {
+
 private:
+
   vk::raii::Context context;
   vk::raii::Instance instance;
   vk::raii::SurfaceKHR surface;
@@ -44,6 +46,12 @@ private:
   vk::raii::PipelineLayout pipelineLayout;
   vk::raii::RenderPass renderPass;
   vk::raii::Pipeline pipeline;
+  std::vector<vk::raii::Framebuffer> framebuffers;
+  vk::raii::CommandPool commandPool;
+  vk::raii::CommandBuffer commandBuffer;
+  vk::raii::Semaphore imageAvailable;
+  vk::raii::Semaphore renderFinished;
+  vk::raii::Fence inFlight;
 
   vk::raii::Instance createInstance() const;
   vk::raii::PhysicalDevice pickPhysicalDevice();
@@ -51,9 +59,13 @@ private:
   vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &);
   std::vector<vk::raii::ImageView> createImageViews() const;
   vk::raii::RenderPass createRenderPass() const;
-  vk::raii::Pipeline createPipeline();
+  vk::raii::Pipeline createPipeline() const;
+  std::vector<vk::raii::Framebuffer> createFramebuffers() const;
+
+  void recordCommandBuffer(size_t) const;
 
 public:
+
   Graphics(const vkfw::Window &window)
       : instance(createInstance()),
         surface(instance, vkfw::createWindowSurface(*instance, window)),
@@ -65,5 +77,22 @@ public:
         imageViews(createImageViews()),
         pipelineLayout(device.createPipelineLayout({})),
         renderPass(createRenderPass()),
-        pipeline(createPipeline()) {}
+        pipeline(createPipeline()),
+        framebuffers(createFramebuffers()),
+        commandPool(device.createCommandPool({
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+            .queueFamilyIndex = queueFamilyIndex,
+        })),
+        commandBuffer(std::move(device.allocateCommandBuffers({
+            .commandPool = *commandPool,
+            .level = vk::CommandBufferLevel::ePrimary,
+            .commandBufferCount = 1,
+        })[0])),
+        imageAvailable(device.createSemaphore({})),
+        renderFinished(device.createSemaphore({})),
+        inFlight(device.createFence({.flags = vk::FenceCreateFlagBits::eSignaled})) {}
+
+  void draw();
+  void waitIdle() { device.waitIdle(); };
+
 };

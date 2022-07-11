@@ -10,12 +10,18 @@ struct App {
   Graphics graphics;
 
   App() : graphics(*window) {}
+
+  void mainLoop() {
+    while (!window->shouldClose()) {
+      vkfw::pollEvents();
+      graphics.draw();
+    }
+    graphics.waitIdle();
+  }
 };
 
 int main(int argc, char *argv[]) {
   App app;
-  while (!app.window->shouldClose()) {
-    vkfw::pollEvents();
-  }
+  app.mainLoop();
   return 0;
 }

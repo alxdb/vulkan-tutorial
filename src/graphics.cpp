@@ -188,11 +188,22 @@ vk::raii::RenderPass Graphics::createRenderPass() const {
       }
           .setColorAttachments(colorAttachmentReferences),
   };
+  std::array<vk::SubpassDependency, 1> dependencies = {
+      vk::SubpassDependency{
+          .srcSubpass = VK_SUBPASS_EXTERNAL,
+          .dstSubpass = 0,
+          .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+          .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+          .srcAccessMask = vk::AccessFlagBits::eNone,
+          .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+      },
+  };
 
-  return device.createRenderPass(vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses));
+  return device.createRenderPass(
+      vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies));
 }
 
-vk::raii::Pipeline Graphics::createPipeline() {
+vk::raii::Pipeline Graphics::createPipeline() const {
   auto vertexShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(vertex_shader_code));
   auto fragmentShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(fragment_shader_code));
   std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
@@ -219,19 +230,6 @@ vk::raii::Pipeline Graphics::createPipeline() {
       .topology = vk::PrimitiveTopology::eTriangleList,
       .primitiveRestartEnable = false,
   };
-  // TODO: Do these need to be here?
-  // auto viewport = vk::Viewport{
-  //     .x = 0.0f,
-  //     .y = 0.0f,
-  //     .width = static_cast<float>(swapExtent.width),
-  //     .height = static_cast<float>(swapExtent.height),
-  //     .minDepth = 0.0f,
-  //     .maxDepth = 1.0f,
-  // };
-  // auto scissor = vk::Rect2D{
-  //     .offset = {0, 0},
-  //     .extent = swapExtent,
-  // };
   auto viewportState = vk::PipelineViewportStateCreateInfo{
       .viewportCount = 1,
       .scissorCount = 1,
@@ -277,4 +275,91 @@ vk::raii::Pipeline Graphics::createPipeline() {
       }
           .setStages(shaderStages);
   return device.createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+}
+
+std::vector<vk::raii::Framebuffer> Graphics::createFramebuffers() const {
+  std::vector<vk::raii::Framebuffer> result;
+  result.reserve(imageViews.size());
+
+  std::ranges::transform(imageViews, std::back_inserter(result), [&](const auto &view) {
+    std::array<vk::ImageView, 1> attachments = {*view};
+    auto createInfo =
+        vk::FramebufferCreateInfo{
+            .renderPass = *renderPass,
+            .width = swapExtent.width,
+            .height = swapExtent.height,
+            .layers = 1,
+        }
+            .setAttachments(attachments);
+    return device.createFramebuffer(createInfo);
+  });
+
+  return result;
+}
+
+void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
+  std::array<vk::ClearValue, 1> clearValues = {{{{{{0.0f, 0.0f, 0.0f, 1.0f}}}}}};
+  std::array<vk::Viewport, 1> viewports = {vk::Viewport{
+      .x = 0.0f,
+      .y = 0.0f,
+      .width = static_cast<float>(swapExtent.width),
+      .height = static_cast<float>(swapExtent.height),
+      .minDepth = 0.0f,
+      .maxDepth = 1.0f,
+  }};
+  std::array<vk::Rect2D, 1> scissors = {vk::Rect2D{
+      .offset = {0, 0},
+      .extent = swapExtent,
+  }};
+
+  commandBuffer.begin({});
+  commandBuffer.beginRenderPass(
+      vk::RenderPassBeginInfo{
+          .renderPass = *renderPass,
+          .framebuffer = *framebuffers[framebuffer_index],
+          .renderArea =
+              {
+                  .offset = {0, 0},
+                  .extent = swapExtent,
+              },
+      }
+          .setClearValues(clearValues),
+      vk::SubpassContents::eInline);
+  commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline);
+  commandBuffer.setViewport(0, viewports);
+  commandBuffer.setScissor(0, scissors);
+  commandBuffer.draw(3, 1, 0, 0);
+  commandBuffer.endRenderPass();
+  commandBuffer.end();
+}
+
+void Graphics::draw() {
+  std::array<vk::Fence, 1> fences = {*inFlight};
+  std::array<vk::Semaphore, 1> waitSemaphores = {*imageAvailable};
+  std::array<vk::Semaphore, 1> signalSemaphores = {*renderFinished};
+  std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  std::array<vk::CommandBuffer, 1> commandBuffers = {*commandBuffer};
+  std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain};
+
+  if (device.waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
+    throw std::runtime_error("Failed waiting for fence");
+  }
+  device.resetFences(fences);
+  auto [result, imageIndex] = swapchain.acquireNextImage(std::numeric_limits<uint64_t>::max(), *imageAvailable);
+
+  std::array<unsigned int, 1> imageIndices = {imageIndex};
+  commandBuffer.reset();
+  recordCommandBuffer(imageIndex);
+  queue.submit(vk::SubmitInfo{}
+                   .setWaitSemaphores(waitSemaphores)
+                   .setWaitDstStageMask(waitStages)
+                   .setCommandBuffers(commandBuffers)
+                   .setSignalSemaphores(signalSemaphores),
+               *inFlight);
+  if (queue.presentKHR(vk::PresentInfoKHR{}
+                           .setWaitSemaphores(signalSemaphores)
+                           .setSwapchains(swapchains)
+                           .setImageIndices(imageIndices)) != vk::Result::eSuccess) {
+    throw std::runtime_error("Failed presentation");
+  }
 }
