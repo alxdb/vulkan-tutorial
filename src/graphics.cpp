@@ -28,100 +28,45 @@ vk::raii::Instance Graphics::createInstance() const {
   };
 }
 
-vk::raii::PhysicalDevice Graphics::pickPhysicalDevice() {
-  auto isSuitable = [&](const vk::raii::PhysicalDevice &pd) {
-    auto deviceExtensionsProperties = pd.enumerateDeviceExtensionProperties();
-
-    std::unordered_set<std::string> availableExtensionNames;
-    std::ranges::transform(deviceExtensionsProperties,
-                           std::inserter(availableExtensionNames, availableExtensionNames.begin()),
-                           [](auto props) { return props.extensionName; });
-    for (auto extensionName : REQUIRED_DEVICE_EXTENSION_NAMES) {
-      if (!availableExtensionNames.contains(extensionName)) {
-        return false;
-      }
-    }
-    swapchainSupportDetails = {pd, surface};
-    if (swapchainSupportDetails.formats.empty() || swapchainSupportDetails.presentModes.empty()) {
-      return false;
-    }
-
-    auto queueFamilies = pd.getQueueFamilyProperties();
-    auto queueFamily = std::ranges::find_if(queueFamilies, [](const auto &queueFamily) {
-      return (bool)(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics);
-    });
-    if (queueFamily == queueFamilies.end()) {
-      return false;
-    }
-
-    queueFamilyIndex = std::distance(queueFamilies.begin(), queueFamily);
-    return static_cast<bool>(pd.getSurfaceSupportKHR(queueFamilyIndex, *surface));
-  };
-
-  auto physicalDevices = instance.enumeratePhysicalDevices();
-  if (auto result = std::ranges::find_if(physicalDevices, isSuitable); result != physicalDevices.end()) {
-    return *result;
-  } else {
-    throw std::runtime_error("No suitabled devices");
-  }
-}
-
-vk::raii::Device Graphics::createDevice() const {
-  std::array<float, 1> queuePriorities{1.0};
-  auto queueCreateInfos = {
-      vk::DeviceQueueCreateInfo{
-          .queueFamilyIndex = queueFamilyIndex,
-          .queueCount = 1,
-      }
-          .setQueuePriorities(queuePriorities),
-  };
-  return {
-      physicalDevice,
-      vk::DeviceCreateInfo{}
-          .setPEnabledExtensionNames(REQUIRED_DEVICE_EXTENSION_NAMES)
-          .setQueueCreateInfos(queueCreateInfos),
-  };
-}
-
 vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
-  if (auto it = std::ranges::find(swapchainSupportDetails.formats,
+  if (auto it = std::ranges::find(device.details.surfaceFormats,
                                   vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear});
-      it != swapchainSupportDetails.formats.end()) {
+      it != device.details.surfaceFormats.end()) {
     surfaceFormat = *it;
   } else {
-    surfaceFormat = swapchainSupportDetails.formats.back();
+    surfaceFormat = device.details.surfaceFormats.back();
   }
 
   vk::PresentModeKHR presentMode;
-  if (auto it = std::ranges::find(swapchainSupportDetails.presentModes, vk::PresentModeKHR::eMailbox);
-      it != swapchainSupportDetails.presentModes.end()) {
+  if (auto it = std::ranges::find(device.details.presentModes, vk::PresentModeKHR::eMailbox);
+      it != device.details.presentModes.end()) {
     presentMode = *it;
   } else {
     presentMode = vk::PresentModeKHR::eFifo;
   }
 
-  if (swapchainSupportDetails.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-    swapExtent = swapchainSupportDetails.capabilities.currentExtent;
+  if (device.details.surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    swapExtent = device.details.surfaceCapabilities.currentExtent;
   } else {
     auto [realWidth, realHeight] = static_cast<std::tuple<uint32_t, uint32_t>>(window.getFramebufferSize());
     swapExtent = vk::Extent2D{
         std::clamp(realWidth,
-                   swapchainSupportDetails.capabilities.minImageExtent.width,
-                   swapchainSupportDetails.capabilities.maxImageExtent.width),
+                   device.details.surfaceCapabilities.minImageExtent.width,
+                   device.details.surfaceCapabilities.maxImageExtent.width),
         std::clamp(realHeight,
-                   swapchainSupportDetails.capabilities.minImageExtent.height,
-                   swapchainSupportDetails.capabilities.maxImageExtent.height),
+                   device.details.surfaceCapabilities.minImageExtent.height,
+                   device.details.surfaceCapabilities.maxImageExtent.height),
     };
   }
 
   uint32_t minImageCount;
-  if (swapchainSupportDetails.capabilities.maxImageCount == 0) {
-    minImageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
+  if (device.details.surfaceCapabilities.maxImageCount == 0) {
+    minImageCount = device.details.surfaceCapabilities.minImageCount + 1;
   } else {
-    minImageCount = swapchainSupportDetails.capabilities.maxImageCount;
+    minImageCount = device.details.surfaceCapabilities.maxImageCount;
   }
 
-  auto result = device.createSwapchainKHR(vk::SwapchainCreateInfoKHR{
+  auto result = device.handle.createSwapchainKHR(vk::SwapchainCreateInfoKHR{
       .surface = *surface,
       .minImageCount = minImageCount,
       .imageFormat = surfaceFormat.format,
@@ -130,7 +75,7 @@ vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
       .imageArrayLayers = 1,
       .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
       .imageSharingMode = vk::SharingMode::eExclusive,
-      .preTransform = swapchainSupportDetails.capabilities.currentTransform,
+      .preTransform = device.details.surfaceCapabilities.currentTransform,
       .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
       .presentMode = presentMode,
       .clipped = true,
@@ -145,7 +90,7 @@ std::vector<vk::raii::ImageView> Graphics::createImageViews() const {
   result.reserve(swapchainImages.size());
 
   std::ranges::transform(swapchainImages, std::back_inserter(result), [&](const auto &image) {
-    return device.createImageView(vk::ImageViewCreateInfo{
+    return device.handle.createImageView(vk::ImageViewCreateInfo{
         .image = image,
         .viewType = vk::ImageViewType::e2D,
         .format = surfaceFormat.format,
@@ -201,12 +146,12 @@ vk::raii::RenderPass Graphics::createRenderPass() const {
 
   auto createInfo =
       vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies);
-  return device.createRenderPass(createInfo);
+  return device.handle.createRenderPass(createInfo);
 }
 
 vk::raii::Pipeline Graphics::createPipeline() const {
-  auto vertexShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(vertex_shader_code));
-  auto fragmentShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(fragment_shader_code));
+  auto vertexShader = device.handle.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(vertex_shader_code));
+  auto fragmentShader = device.handle.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(fragment_shader_code));
   std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
       vk::PipelineShaderStageCreateInfo{
           .stage = vk::ShaderStageFlagBits::eVertex,
@@ -275,7 +220,7 @@ vk::raii::Pipeline Graphics::createPipeline() const {
           .subpass = 0,
       }
           .setStages(shaderStages);
-  return device.createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+  return device.handle.createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
 }
 
 std::vector<vk::raii::Framebuffer> Graphics::createFramebuffers() const {
@@ -292,7 +237,7 @@ std::vector<vk::raii::Framebuffer> Graphics::createFramebuffers() const {
             .layers = 1,
         }
             .setAttachments(attachments);
-    return device.createFramebuffer(createInfo);
+    return device.handle.createFramebuffer(createInfo);
   });
 
   return result;
@@ -342,22 +287,22 @@ void Graphics::draw() {
   std::array<vk::CommandBuffer, 1> commandBuffers = {*commandBuffer};
   std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain};
 
-  if (device.waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
+  if (device.handle.waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
     throw std::runtime_error("Failed waiting for fence");
   }
-  device.resetFences(fences);
+  device.handle.resetFences(fences);
   auto [result, imageIndex] = swapchain.acquireNextImage(std::numeric_limits<uint64_t>::max(), *imageAvailable);
 
   std::array<unsigned int, 1> imageIndices = {imageIndex};
   commandBuffer.reset();
   recordCommandBuffer(imageIndex);
-  queue.submit(vk::SubmitInfo{}
+  device.queue.submit(vk::SubmitInfo{}
                    .setWaitSemaphores(waitSemaphores)
                    .setWaitDstStageMask(waitStages)
                    .setCommandBuffers(commandBuffers)
                    .setSignalSemaphores(signalSemaphores),
                *inFlight);
-  if (queue.presentKHR(vk::PresentInfoKHR{}
+  if (device.queue.presentKHR(vk::PresentInfoKHR{}
                            .setWaitSemaphores(signalSemaphores)
                            .setSwapchains(swapchains)
                            .setImageIndices(imageIndices)) != vk::Result::eSuccess) {
