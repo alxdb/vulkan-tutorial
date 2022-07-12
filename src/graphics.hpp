@@ -1,10 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #ifndef VKFW_NO_STRUCT_CONSTRUCTORS
 #define VKFW_NO_STRUCT_CONSTRUCTORS
 #endif
-
-#include <vector>
 
 #include <vkfw/vkfw.hpp>
 #include <vulkan/vulkan_raii.hpp>

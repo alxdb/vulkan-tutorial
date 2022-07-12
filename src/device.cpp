@@ -9,8 +9,8 @@ const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
 };
 const std::array<float, 1> QUEUE_PRIORITIES = {1.0};
 
-std::optional<DeviceDetails> isSuitable(const vk::raii::PhysicalDevice &physicalDevice,
-                                        const vk::raii::SurfaceKHR &surface) {
+std::optional<Device::Details> isSuitable(const vk::raii::PhysicalDevice &physicalDevice,
+                                          const vk::raii::SurfaceKHR &surface) {
   auto deviceExtensionsProperties = physicalDevice.enumerateDeviceExtensionProperties();
 
   // supports required extensions
@@ -51,16 +51,16 @@ std::optional<DeviceDetails> isSuitable(const vk::raii::PhysicalDevice &physical
   }};
 }
 
-DeviceDetails findSuitableDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) {
+Device::Details findSuitableDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) {
   for (const auto &physicalDevice : instance.enumeratePhysicalDevices()) {
     if (auto details = isSuitable(physicalDevice, surface)) {
       return *details;
     }
   }
-  throw std::runtime_error("No suitabled devices");
+  throw std::runtime_error("No suitable devices");
 }
 
-vk::raii::Device createDevice(const DeviceDetails &details) {
+vk::raii::Device createDevice(const Device::Details &details) {
   auto queueCreateInfos = {
       vk::DeviceQueueCreateInfo{
           .queueFamilyIndex = details.queueFamilyIndex,

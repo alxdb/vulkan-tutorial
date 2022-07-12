@@ -8,16 +8,16 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-struct DeviceDetails {
-  const uint32_t queueFamilyIndex;
-  const vk::SurfaceCapabilitiesKHR surfaceCapabilities;
-  const std::vector<vk::SurfaceFormatKHR> surfaceFormats;
-  const std::vector<vk::PresentModeKHR> presentModes;
-  const vk::raii::PhysicalDevice physicalDevice;
-};
-
 struct Device {
-  const DeviceDetails details;
+  struct Details {
+    const uint32_t queueFamilyIndex;
+    const vk::SurfaceCapabilitiesKHR surfaceCapabilities;
+    const std::vector<vk::SurfaceFormatKHR> surfaceFormats;
+    const std::vector<vk::PresentModeKHR> presentModes;
+    const vk::raii::PhysicalDevice physicalDevice;
+  };
+
+  const Details details;
   const vk::raii::Device handle;
   const vk::raii::Queue queue;
 
