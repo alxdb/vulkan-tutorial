@@ -7,27 +7,6 @@
 #include "fragment_shader.h"
 #include "vertex_shader.h"
 
-const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-};
-const std::array<const char *, 1> REQUIRED_LAYER_NAMES = {
-#ifndef NDEBUG
-    "VK_LAYER_KHRONOS_validation",
-#endif
-};
-
-vk::raii::Instance Graphics::createInstance() const {
-  auto requiredExtensions = vkfw::getRequiredInstanceExtensions();
-  auto applicationInfo = vk::ApplicationInfo{.apiVersion = VK_API_VERSION_1_1};
-
-  return {
-      context,
-      vk::InstanceCreateInfo{.pApplicationInfo = &applicationInfo}
-          .setPEnabledExtensionNames(requiredExtensions)
-          .setPEnabledLayerNames(REQUIRED_LAYER_NAMES),
-  };
-}
-
 vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
   if (auto it = std::ranges::find(device.details.surfaceFormats,
                                   vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear});
@@ -67,7 +46,7 @@ vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
   }
 
   auto result = device.handle.createSwapchainKHR(vk::SwapchainCreateInfoKHR{
-      .surface = *surface,
+      .surface = *base.surface,
       .minImageCount = minImageCount,
       .imageFormat = surfaceFormat.format,
       .imageColorSpace = surfaceFormat.colorSpace,

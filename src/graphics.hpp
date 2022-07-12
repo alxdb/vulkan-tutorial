@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef VULKAN_HPP_NO_CONSTRUCTORS
-#define VULKAN_HPP_NO_CONSTRUCTORS
-#endif
-
 #ifndef VKFW_NO_STRUCT_CONSTRUCTORS
 #define VKFW_NO_STRUCT_CONSTRUCTORS
 #endif
@@ -13,14 +9,13 @@
 #include <vkfw/vkfw.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "base.hpp"
 #include "device.hpp"
 
 class Graphics {
 
 private:
-  const vk::raii::Context context;
-  const vk::raii::Instance instance;
-  const vk::raii::SurfaceKHR surface;
+  const Base base;
   const Device device;
   bool swapchainCreated = false;      // set by createSwapchain
   vk::SurfaceFormatKHR surfaceFormat; // set by createSwapchain
@@ -38,9 +33,6 @@ private:
   vk::raii::Semaphore renderFinished;
   vk::raii::Fence inFlight;
 
-  vk::raii::Instance createInstance() const;
-  vk::raii::PhysicalDevice pickPhysicalDevice();
-  vk::raii::Device createDevice() const;
   vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &);
   std::vector<vk::raii::ImageView> createImageViews() const;
   vk::raii::RenderPass createRenderPass() const;
@@ -51,9 +43,8 @@ private:
 
 public:
   Graphics(const vkfw::Window &window)
-      : instance(createInstance()),
-        surface(instance, vkfw::createWindowSurface(*instance, window)),
-        device(instance, surface),
+      : base(window),
+        device(base.instance, base.surface),
         swapchain(createSwapchain(window)),
         swapchainImages(swapchain.getImages()),
         imageViews(createImageViews()),
