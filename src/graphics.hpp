@@ -28,7 +28,6 @@ struct SwapchainSupportDetails {
 class Graphics {
 
 private:
-
   vk::raii::Context context;
   vk::raii::Instance instance;
   vk::raii::SurfaceKHR surface;
@@ -37,7 +36,7 @@ private:
   vk::raii::PhysicalDevice physicalDevice;
   vk::raii::Device device;
   vk::raii::Queue queue;
-  bool swapchainCreated = false;
+  bool swapchainCreated = false;      // set by createSwapchain
   vk::SurfaceFormatKHR surfaceFormat; // set by createSwapchain
   vk::Extent2D swapExtent;            // set by createSwapchain
   vk::raii::SwapchainKHR swapchain;
@@ -65,7 +64,6 @@ private:
   void recordCommandBuffer(size_t) const;
 
 public:
-
   Graphics(const vkfw::Window &window)
       : instance(createInstance()),
         surface(instance, vkfw::createWindowSurface(*instance, window)),
@@ -94,5 +92,4 @@ public:
 
   void draw();
   void waitIdle() { device.waitIdle(); };
-
 };

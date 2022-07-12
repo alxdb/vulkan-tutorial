@@ -199,8 +199,9 @@ vk::raii::RenderPass Graphics::createRenderPass() const {
       },
   };
 
-  return device.createRenderPass(
-      vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies));
+  auto createInfo =
+      vk::RenderPassCreateInfo{}.setAttachments(attachments).setSubpasses(subpasses).setDependencies(dependencies);
+  return device.createRenderPass(createInfo);
 }
 
 vk::raii::Pipeline Graphics::createPipeline() const {
