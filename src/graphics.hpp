@@ -11,12 +11,11 @@
 
 #include "base.hpp"
 #include "device.hpp"
-#include "swapchain.hpp"
 #include "pipeline.hpp"
+#include "swapchain.hpp"
 
 class Graphics {
 
-private:
   const Base base;
   const Device device;
   const Swapchain swapchain;
@@ -52,6 +51,6 @@ public:
         renderFinished(device.handle.createSemaphore({})),
         inFlight(device.handle.createFence({.flags = vk::FenceCreateFlagBits::eSignaled})) {}
 
-  void draw();
-  void waitIdle() { device.handle.waitIdle(); };
+  void draw() const;
+  void waitIdle() const { device.handle.waitIdle(); };
 };

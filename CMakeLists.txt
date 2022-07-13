@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 project(vulkan_tutorial)
 
 set(CMAKE_CXX_STANDARD 20)
+add_compile_options("${CMAKE_CXX_FLAGS}" "-Wall" "-Wextra")
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_package(glfw3 3.3 REQUIRED)

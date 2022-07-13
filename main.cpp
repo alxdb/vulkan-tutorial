@@ -1,17 +1,15 @@
 #include <graphics.hpp>
 
 struct App {
-  const vkfw::WindowHints windowHints = {
-      .resizable = false,
-  };
-  vkfw::UniqueHandle<vkfw::Instance> vkfw = vkfw::initUnique();
-  vkfw::UniqueHandle<vkfw::Window> window = vkfw::createWindowUnique(1920, 1080, "vulkan tutorial", windowHints);
+  const vkfw::UniqueHandle<vkfw::Instance> vkfw = vkfw::initUnique();
+  const vkfw::UniqueHandle<vkfw::Window> window =
+      vkfw::createWindowUnique(1920, 1080, "vulkan tutorial", {.resizable = false});
 
-  Graphics graphics;
+  const Graphics graphics;
 
   App() : graphics(*window) {}
 
-  void mainLoop() {
+  void main() {
     while (!window->shouldClose()) {
       vkfw::pollEvents();
       graphics.draw();
@@ -20,8 +18,7 @@ struct App {
   }
 };
 
-int main(int argc, char *argv[]) {
+int main() {
   App app;
-  app.mainLoop();
-  return 0;
+  app.main();
 }

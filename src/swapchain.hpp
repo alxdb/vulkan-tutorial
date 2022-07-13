@@ -21,8 +21,5 @@ struct Swapchain {
   const vk::raii::SwapchainKHR handle;
   const std::vector<vk::raii::ImageView> images;
 
-  Swapchain(const vkfw::Window &,
-            const vk::raii::SurfaceKHR &,
-            const vk::raii::Device &,
-            const SurfaceDetails &);
+  Swapchain(const vkfw::Window &, const vk::raii::SurfaceKHR &, const vk::raii::Device &, const SurfaceDetails &);
 };

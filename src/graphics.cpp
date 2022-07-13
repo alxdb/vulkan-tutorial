@@ -58,7 +58,7 @@ void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
   commandBuffer.end();
 }
 
-void Graphics::draw() {
+void Graphics::draw() const {
   std::array<vk::Fence, 1> fences = {*inFlight};
   std::array<vk::Semaphore, 1> waitSemaphores = {*imageAvailable};
   std::array<vk::Semaphore, 1> signalSemaphores = {*renderFinished};
@@ -76,15 +76,15 @@ void Graphics::draw() {
   commandBuffer.reset();
   recordCommandBuffer(imageIndex);
   device.queue.submit(vk::SubmitInfo{}
-                   .setWaitSemaphores(waitSemaphores)
-                   .setWaitDstStageMask(waitStages)
-                   .setCommandBuffers(commandBuffers)
-                   .setSignalSemaphores(signalSemaphores),
-               *inFlight);
+                          .setWaitSemaphores(waitSemaphores)
+                          .setWaitDstStageMask(waitStages)
+                          .setCommandBuffers(commandBuffers)
+                          .setSignalSemaphores(signalSemaphores),
+                      *inFlight);
   if (device.queue.presentKHR(vk::PresentInfoKHR{}
-                           .setWaitSemaphores(signalSemaphores)
-                           .setSwapchains(swapchains)
-                           .setImageIndices(imageIndices)) != vk::Result::eSuccess) {
+                                  .setWaitSemaphores(signalSemaphores)
+                                  .setSwapchains(swapchains)
+                                  .setImageIndices(imageIndices)) != vk::Result::eSuccess) {
     throw std::runtime_error("Failed presentation");
   }
 }
