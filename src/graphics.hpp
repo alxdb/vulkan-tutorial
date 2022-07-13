@@ -12,6 +12,7 @@
 #include "base.hpp"
 #include "device.hpp"
 #include "swapchain.hpp"
+#include "pipeline.hpp"
 
 class Graphics {
 
@@ -19,9 +20,7 @@ private:
   const Base base;
   const Device device;
   const Swapchain swapchain;
-  vk::raii::PipelineLayout pipelineLayout;
-  vk::raii::RenderPass renderPass;
-  vk::raii::Pipeline pipeline;
+  const Pipeline pipeline;
   std::vector<vk::raii::Framebuffer> framebuffers;
   vk::raii::CommandPool commandPool;
   vk::raii::CommandBuffer commandBuffer;
@@ -29,8 +28,6 @@ private:
   vk::raii::Semaphore renderFinished;
   vk::raii::Fence inFlight;
 
-  vk::raii::RenderPass createRenderPass() const;
-  vk::raii::Pipeline createPipeline() const;
   std::vector<vk::raii::Framebuffer> createFramebuffers() const;
 
   void recordCommandBuffer(size_t) const;
@@ -40,9 +37,7 @@ public:
       : base(window),
         device(base.instance, base.surface),
         swapchain(window, base.surface, device.handle, device.details.surfaceDetails),
-        pipelineLayout(device.handle.createPipelineLayout({})),
-        renderPass(createRenderPass()),
-        pipeline(createPipeline()),
+        pipeline(swapchain.details.format, device.handle),
         framebuffers(createFramebuffers()),
         commandPool(device.handle.createCommandPool({
             .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
