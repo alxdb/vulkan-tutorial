@@ -11,18 +11,14 @@
 
 #include "base.hpp"
 #include "device.hpp"
+#include "swapchain.hpp"
 
 class Graphics {
 
 private:
   const Base base;
   const Device device;
-  bool swapchainCreated = false;      // set by createSwapchain
-  vk::SurfaceFormatKHR surfaceFormat; // set by createSwapchain
-  vk::Extent2D swapExtent;            // set by createSwapchain
-  vk::raii::SwapchainKHR swapchain;
-  std::vector<VkImage> swapchainImages;
-  std::vector<vk::raii::ImageView> imageViews;
+  const Swapchain swapchain;
   vk::raii::PipelineLayout pipelineLayout;
   vk::raii::RenderPass renderPass;
   vk::raii::Pipeline pipeline;
@@ -33,8 +29,6 @@ private:
   vk::raii::Semaphore renderFinished;
   vk::raii::Fence inFlight;
 
-  vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &);
-  std::vector<vk::raii::ImageView> createImageViews() const;
   vk::raii::RenderPass createRenderPass() const;
   vk::raii::Pipeline createPipeline() const;
   std::vector<vk::raii::Framebuffer> createFramebuffers() const;
@@ -45,9 +39,7 @@ public:
   Graphics(const vkfw::Window &window)
       : base(window),
         device(base.instance, base.surface),
-        swapchain(createSwapchain(window)),
-        swapchainImages(swapchain.getImages()),
-        imageViews(createImageViews()),
+        swapchain(window, base.surface, device.handle, device.details.surfaceDetails),
         pipelineLayout(device.handle.createPipelineLayout({})),
         renderPass(createRenderPass()),
         pipeline(createPipeline()),

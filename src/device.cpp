@@ -42,13 +42,16 @@ std::optional<Device::Details> isSuitable(const vk::raii::PhysicalDevice &physic
     return std::nullopt;
   }
 
-  return {{
+  return Device::Details{
       .queueFamilyIndex = queueFamilyIndex,
-      .surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface),
-      .surfaceFormats = surfaceFormats,
-      .presentModes = presentModes,
       .physicalDevice = physicalDevice,
-  }};
+      .surfaceDetails =
+          {
+              .capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface),
+              .formats = surfaceFormats,
+              .presentModes = presentModes,
+          },
+  };
 }
 
 Device::Details findSuitableDevice(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface) {

@@ -7,90 +7,10 @@
 #include "fragment_shader.h"
 #include "vertex_shader.h"
 
-vk::raii::SwapchainKHR Graphics::createSwapchain(const vkfw::Window &window) {
-  if (auto it = std::ranges::find(device.details.surfaceFormats,
-                                  vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear});
-      it != device.details.surfaceFormats.end()) {
-    surfaceFormat = *it;
-  } else {
-    surfaceFormat = device.details.surfaceFormats.back();
-  }
-
-  vk::PresentModeKHR presentMode;
-  if (auto it = std::ranges::find(device.details.presentModes, vk::PresentModeKHR::eMailbox);
-      it != device.details.presentModes.end()) {
-    presentMode = *it;
-  } else {
-    presentMode = vk::PresentModeKHR::eFifo;
-  }
-
-  if (device.details.surfaceCapabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-    swapExtent = device.details.surfaceCapabilities.currentExtent;
-  } else {
-    auto [realWidth, realHeight] = static_cast<std::tuple<uint32_t, uint32_t>>(window.getFramebufferSize());
-    swapExtent = vk::Extent2D{
-        std::clamp(realWidth,
-                   device.details.surfaceCapabilities.minImageExtent.width,
-                   device.details.surfaceCapabilities.maxImageExtent.width),
-        std::clamp(realHeight,
-                   device.details.surfaceCapabilities.minImageExtent.height,
-                   device.details.surfaceCapabilities.maxImageExtent.height),
-    };
-  }
-
-  uint32_t minImageCount;
-  if (device.details.surfaceCapabilities.maxImageCount == 0) {
-    minImageCount = device.details.surfaceCapabilities.minImageCount + 1;
-  } else {
-    minImageCount = device.details.surfaceCapabilities.maxImageCount;
-  }
-
-  auto result = device.handle.createSwapchainKHR(vk::SwapchainCreateInfoKHR{
-      .surface = *base.surface,
-      .minImageCount = minImageCount,
-      .imageFormat = surfaceFormat.format,
-      .imageColorSpace = surfaceFormat.colorSpace,
-      .imageExtent = swapExtent,
-      .imageArrayLayers = 1,
-      .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
-      .imageSharingMode = vk::SharingMode::eExclusive,
-      .preTransform = device.details.surfaceCapabilities.currentTransform,
-      .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-      .presentMode = presentMode,
-      .clipped = true,
-      .oldSwapchain = swapchainCreated ? *swapchain : VK_NULL_HANDLE,
-  });
-  swapchainCreated = true;
-  return result;
-}
-
-std::vector<vk::raii::ImageView> Graphics::createImageViews() const {
-  std::vector<vk::raii::ImageView> result;
-  result.reserve(swapchainImages.size());
-
-  std::ranges::transform(swapchainImages, std::back_inserter(result), [&](const auto &image) {
-    return device.handle.createImageView(vk::ImageViewCreateInfo{
-        .image = image,
-        .viewType = vk::ImageViewType::e2D,
-        .format = surfaceFormat.format,
-        .subresourceRange =
-            {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
-    });
-  });
-
-  return result;
-}
-
 vk::raii::RenderPass Graphics::createRenderPass() const {
   std::array<vk::AttachmentDescription, 1> attachments = {
       vk::AttachmentDescription{
-          .format = surfaceFormat.format,
+          .format = swapchain.details.format,
           .samples = vk::SampleCountFlagBits::e1,
           .loadOp = vk::AttachmentLoadOp::eClear,
           .storeOp = vk::AttachmentStoreOp::eStore,
@@ -204,15 +124,15 @@ vk::raii::Pipeline Graphics::createPipeline() const {
 
 std::vector<vk::raii::Framebuffer> Graphics::createFramebuffers() const {
   std::vector<vk::raii::Framebuffer> result;
-  result.reserve(imageViews.size());
+  result.reserve(swapchain.images.size());
 
-  std::ranges::transform(imageViews, std::back_inserter(result), [&](const auto &view) {
+  std::ranges::transform(swapchain.images, std::back_inserter(result), [&](const auto &view) {
     std::array<vk::ImageView, 1> attachments = {*view};
     auto createInfo =
         vk::FramebufferCreateInfo{
             .renderPass = *renderPass,
-            .width = swapExtent.width,
-            .height = swapExtent.height,
+            .width = swapchain.details.extent.width,
+            .height = swapchain.details.extent.height,
             .layers = 1,
         }
             .setAttachments(attachments);
@@ -227,14 +147,14 @@ void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
   std::array<vk::Viewport, 1> viewports = {vk::Viewport{
       .x = 0.0f,
       .y = 0.0f,
-      .width = static_cast<float>(swapExtent.width),
-      .height = static_cast<float>(swapExtent.height),
+      .width = static_cast<float>(swapchain.details.extent.width),
+      .height = static_cast<float>(swapchain.details.extent.height),
       .minDepth = 0.0f,
       .maxDepth = 1.0f,
   }};
   std::array<vk::Rect2D, 1> scissors = {vk::Rect2D{
       .offset = {0, 0},
-      .extent = swapExtent,
+      .extent = swapchain.details.extent,
   }};
 
   commandBuffer.begin({});
@@ -245,7 +165,7 @@ void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
           .renderArea =
               {
                   .offset = {0, 0},
-                  .extent = swapExtent,
+                  .extent = swapchain.details.extent,
               },
       }
           .setClearValues(clearValues),
@@ -264,13 +184,13 @@ void Graphics::draw() {
   std::array<vk::Semaphore, 1> signalSemaphores = {*renderFinished};
   std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
   std::array<vk::CommandBuffer, 1> commandBuffers = {*commandBuffer};
-  std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain};
+  std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain.handle};
 
   if (device.handle.waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
     throw std::runtime_error("Failed waiting for fence");
   }
   device.handle.resetFences(fences);
-  auto [result, imageIndex] = swapchain.acquireNextImage(std::numeric_limits<uint64_t>::max(), *imageAvailable);
+  auto [result, imageIndex] = swapchain.handle.acquireNextImage(std::numeric_limits<uint64_t>::max(), *imageAvailable);
 
   std::array<unsigned int, 1> imageIndices = {imageIndex};
   commandBuffer.reset();
