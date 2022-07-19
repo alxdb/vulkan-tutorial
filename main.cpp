@@ -5,7 +5,7 @@ struct App {
   const vkfw::UniqueHandle<vkfw::Window> window =
       vkfw::createWindowUnique(1920, 1080, "vulkan tutorial", {.resizable = false});
 
-  const Graphics graphics;
+  Graphics graphics;
 
   App() : graphics(*window) {}
 

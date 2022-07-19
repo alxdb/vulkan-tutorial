@@ -50,8 +50,9 @@ uint32_t determineMinImageCount(const vk::SurfaceCapabilitiesKHR &capabilities) 
   }
 }
 
-std::vector<vk::raii::ImageView>
-createImages(const vk::raii::SwapchainKHR &swapchain, const vk::raii::Device &device, const vk::Format &format) {
+std::vector<vk::raii::ImageView> createImages(const vk::raii::SwapchainKHR &swapchain,
+                                              const vk::raii::Device &device,
+                                              const vk::Format &format) {
   auto swapchainImages = swapchain.getImages();
 
   std::vector<vk::raii::ImageView> result;
@@ -97,3 +98,26 @@ Swapchain::Swapchain(const vkfw::Window &window,
           .oldSwapchain = VK_NULL_HANDLE,
       })),
       images(createImages(handle, device, details.format)) {}
+
+std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii::RenderPass &renderPass,
+                                                                 const vk::raii::Device &device) const {
+  std::vector<vk::raii::Framebuffer> result;
+  result.reserve(images.size());
+
+  std::ranges::transform(images, std::back_inserter(result), [&](const auto &view) {
+    std::array<vk::ImageView, 1> attachments = {*view};
+
+    auto createInfo =
+        vk::FramebufferCreateInfo{
+            .renderPass = *renderPass,
+            .width = details.extent.width,
+            .height = details.extent.height,
+            .layers = 1,
+        }
+            .setAttachments(attachments);
+
+    return device.createFramebuffer(createInfo);
+  });
+
+  return result;
+}

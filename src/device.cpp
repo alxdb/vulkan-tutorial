@@ -82,4 +82,18 @@ vk::raii::Device createDevice(const Device::Details &details) {
 Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface)
     : details(findSuitableDevice(instance, surface)),
       handle(createDevice(details)),
-      queue(handle.getQueue(details.queueFamilyIndex, 0)) {}
+      queue(handle.getQueue(details.queueFamilyIndex, 0)),
+      commandPool(handle.createCommandPool({
+          .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+          .queueFamilyIndex = details.queueFamilyIndex,
+      })) {}
+
+std::array<Frame, 2> Device::createFrames() const {
+  auto commandBuffers = handle.allocateCommandBuffers({
+      .commandPool = *commandPool,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 2,
+  });
+
+  return {Frame(std::move(commandBuffers[0]), handle), Frame(std::move(commandBuffers[1]), handle)};
+}

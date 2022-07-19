@@ -2,27 +2,7 @@
 
 #include <ranges>
 
-std::vector<vk::raii::Framebuffer> Graphics::createFramebuffers() const {
-  std::vector<vk::raii::Framebuffer> result;
-  result.reserve(swapchain.images.size());
-
-  std::ranges::transform(swapchain.images, std::back_inserter(result), [&](const auto &view) {
-    std::array<vk::ImageView, 1> attachments = {*view};
-    auto createInfo =
-        vk::FramebufferCreateInfo{
-            .renderPass = *pipeline.renderPass,
-            .width = swapchain.details.extent.width,
-            .height = swapchain.details.extent.height,
-            .layers = 1,
-        }
-            .setAttachments(attachments);
-    return device.handle.createFramebuffer(createInfo);
-  });
-
-  return result;
-}
-
-void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
+void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, size_t framebuffer_index) const {
   std::array<vk::ClearValue, 1> clearValues = {{{{{{0.0f, 0.0f, 0.0f, 1.0f}}}}}};
   std::array<vk::Viewport, 1> viewports = {vk::Viewport{
       .x = 0.0f,
@@ -58,33 +38,36 @@ void Graphics::recordCommandBuffer(size_t framebuffer_index) const {
   commandBuffer.end();
 }
 
-void Graphics::draw() const {
-  std::array<vk::Fence, 1> fences = {*inFlight};
-  std::array<vk::Semaphore, 1> waitSemaphores = {*imageAvailable};
-  std::array<vk::Semaphore, 1> signalSemaphores = {*renderFinished};
+void Graphics::draw() {
+  const Frame &currentFrame = frames[currentFrameIndex];
   std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-  std::array<vk::CommandBuffer, 1> commandBuffers = {*commandBuffer};
   std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain.handle};
 
-  if (device.handle.waitForFences(fences, true, std::numeric_limits<uint64_t>::max()) != vk::Result::eSuccess) {
+  if (device.handle.waitForFences({*currentFrame.inFlight}, true, std::numeric_limits<uint64_t>::max()) !=
+      vk::Result::eSuccess) {
     throw std::runtime_error("Failed waiting for fence");
   }
-  device.handle.resetFences(fences);
-  auto [result, imageIndex] = swapchain.handle.acquireNextImage(std::numeric_limits<uint64_t>::max(), *imageAvailable);
+  device.handle.resetFences({*currentFrame.inFlight});
+
+  auto [result, imageIndex] =
+      swapchain.handle.acquireNextImage(std::numeric_limits<uint64_t>::max(), *currentFrame.imageAvailable);
 
   std::array<unsigned int, 1> imageIndices = {imageIndex};
-  commandBuffer.reset();
-  recordCommandBuffer(imageIndex);
+  currentFrame.commandBuffer.reset();
+
+  recordCommandBuffer(currentFrame.commandBuffer, imageIndex);
   device.queue.submit(vk::SubmitInfo{}
-                          .setWaitSemaphores(waitSemaphores)
+                          .setWaitSemaphores(*currentFrame.imageAvailable)
                           .setWaitDstStageMask(waitStages)
-                          .setCommandBuffers(commandBuffers)
-                          .setSignalSemaphores(signalSemaphores),
-                      *inFlight);
+                          .setCommandBuffers(*currentFrame.commandBuffer)
+                          .setSignalSemaphores(*currentFrame.renderFinished),
+                      *currentFrame.inFlight);
   if (device.queue.presentKHR(vk::PresentInfoKHR{}
-                                  .setWaitSemaphores(signalSemaphores)
+                                  .setWaitSemaphores(*currentFrame.renderFinished)
                                   .setSwapchains(swapchains)
                                   .setImageIndices(imageIndices)) != vk::Result::eSuccess) {
     throw std::runtime_error("Failed presentation");
   }
+
+  currentFrameIndex = currentFrameIndex ^ 1;
 }

@@ -11,6 +11,7 @@
 
 #include "base.hpp"
 #include "device.hpp"
+#include "frame.hpp"
 #include "pipeline.hpp"
 #include "swapchain.hpp"
 
@@ -20,16 +21,12 @@ class Graphics {
   const Device device;
   const Swapchain swapchain;
   const Pipeline pipeline;
-  std::vector<vk::raii::Framebuffer> framebuffers;
-  vk::raii::CommandPool commandPool;
-  vk::raii::CommandBuffer commandBuffer;
-  vk::raii::Semaphore imageAvailable;
-  vk::raii::Semaphore renderFinished;
-  vk::raii::Fence inFlight;
 
-  std::vector<vk::raii::Framebuffer> createFramebuffers() const;
+  const std::vector<vk::raii::Framebuffer> framebuffers;
+  const std::array<Frame, 2> frames;
+  uint32_t currentFrameIndex = 0;
 
-  void recordCommandBuffer(size_t) const;
+  void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
 
 public:
   Graphics(const vkfw::Window &window)
@@ -37,20 +34,9 @@ public:
         device(base.instance, base.surface),
         swapchain(window, base.surface, device.handle, device.details.surfaceDetails),
         pipeline(swapchain.details.format, device.handle),
-        framebuffers(createFramebuffers()),
-        commandPool(device.handle.createCommandPool({
-            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-            .queueFamilyIndex = device.details.queueFamilyIndex,
-        })),
-        commandBuffer(std::move(device.handle.allocateCommandBuffers({
-            .commandPool = *commandPool,
-            .level = vk::CommandBufferLevel::ePrimary,
-            .commandBufferCount = 1,
-        })[0])),
-        imageAvailable(device.handle.createSemaphore({})),
-        renderFinished(device.handle.createSemaphore({})),
-        inFlight(device.handle.createFence({.flags = vk::FenceCreateFlagBits::eSignaled})) {}
+        framebuffers(swapchain.createFramebuffers(pipeline.renderPass, device.handle)),
+        frames(device.createFrames()) {}
 
-  void draw() const;
+  void draw();
   void waitIdle() const { device.handle.waitIdle(); };
 };
