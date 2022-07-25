@@ -4,8 +4,9 @@
 #include <ranges>
 #include <unordered_set>
 
-const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
+const std::array<const char *, 2> REQUIRED_DEVICE_EXTENSION_NAMES = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    "VK_KHR_portability_subset",
 };
 const std::array<float, 1> QUEUE_PRIORITIES = {1.0};
 
