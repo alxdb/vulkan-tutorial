@@ -24,7 +24,7 @@ class Graphics {
 
   const std::vector<vk::raii::Framebuffer> framebuffers;
   const std::array<Frame, 2> frames;
-  uint32_t currentFrameIndex = 0;
+  size_t currentFrameIndex = 0;
 
   void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
 
