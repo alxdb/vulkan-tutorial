@@ -2,10 +2,6 @@
 
 #include <cstdint>
 
-#ifndef VULKAN_HPP_NO_CONSTRUCTORS
-#define VULKAN_HPP_NO_CONSTRUCTORS
-#endif
-
 #include <vulkan/vulkan_raii.hpp>
 
 #include "frame.hpp"
