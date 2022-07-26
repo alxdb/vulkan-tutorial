@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "swapchain.hpp"
 
 vk::SurfaceFormatKHR pickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &formats) {
@@ -120,4 +122,29 @@ std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii:
   });
 
   return result;
+}
+
+void Swapchain::recreate(const vkfw::Window &window,
+                         const vk::raii::SurfaceKHR &surface,
+                         const vk::raii::Device &device,
+                         const SurfaceDetails &surfaceDetails) {
+  device.waitIdle();
+
+  details = determineDetails(window, surfaceDetails);
+  handle = device.createSwapchainKHR({
+      .surface = *surface,
+      .minImageCount = determineMinImageCount(surfaceDetails.capabilities),
+      .imageFormat = details.format,
+      .imageColorSpace = details.colorSpace,
+      .imageExtent = details.extent,
+      .imageArrayLayers = 1,
+      .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+      .imageSharingMode = vk::SharingMode::eExclusive,
+      .preTransform = surfaceDetails.capabilities.currentTransform,
+      .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+      .presentMode = details.presentMode,
+      .clipped = true,
+      .oldSwapchain = *handle,
+  });
+  images = createImages(handle, device, details.format);
 }

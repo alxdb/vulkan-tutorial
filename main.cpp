@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <graphics.hpp>
 
 struct App {
@@ -12,9 +14,8 @@ struct App {
   void main() {
     while (!window->shouldClose()) {
       vkfw::pollEvents();
-      graphics.draw();
+      graphics.draw(*window);
     }
-    graphics.waitIdle();
   }
 };
 
