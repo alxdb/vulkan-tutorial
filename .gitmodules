@@ -1,3 +1,6 @@
 [submodule "lib/vkfw"]
 	path = lib/vkfw
 	url = https://github.com/Cvelth/vkfw
+[submodule "lib/glfw"]
+	path = lib/glfw
+	url = https://github.com/glfw/glfw.git
