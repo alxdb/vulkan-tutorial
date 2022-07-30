@@ -10,10 +10,12 @@ struct Swapchain {
   vk::Extent2D extent;
   vk::raii::SwapchainKHR handle;
   std::vector<vk::raii::ImageView> images;
+  std::vector<vk::raii::Framebuffer> framebuffers;
 
-  Swapchain(const vkfw::Window &, const vk::raii::SurfaceKHR &, const Device &device);
-  Swapchain(const vkfw::Window &, const vk::raii::SurfaceKHR &, const Device &device, const vk::SwapchainKHR &);
-
-  [[nodiscard]] std::vector<vk::raii::Framebuffer> createFramebuffers(const vk::raii::RenderPass &,
-                                                                      const vk::raii::Device &) const;
+  Swapchain(const vkfw::Window &, const vk::raii::SurfaceKHR &, const Device &device, const vk::raii::RenderPass &);
+  Swapchain(const vkfw::Window &,
+            const vk::raii::SurfaceKHR &,
+            const Device &device,
+            const vk::raii::RenderPass &,
+            const vk::SwapchainKHR &);
 };

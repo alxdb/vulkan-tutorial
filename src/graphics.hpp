@@ -17,6 +17,8 @@ class Graphics {
   const Base base;
   const Device device;
   const Pipeline pipeline;
+
+  size_t currentFrameIndex = 0;
   const std::array<Frame, 2> frames;
 
   const std::vector<Vertex> vertices = {
@@ -27,8 +29,6 @@ class Graphics {
   const VertexBuffer vertexBuffer;
 
   Swapchain swapchain;
-  std::vector<vk::raii::Framebuffer> framebuffers;
-  size_t currentFrameIndex = 0;
 
   void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
   void waitIdle() const { device.handle.waitIdle(); };
@@ -40,8 +40,7 @@ public:
         pipeline(device.details.format.format, device.handle),
         frames(device.createFrames()),
         vertexBuffer(device.handle, device.details.physicalDevice, vertices),
-        swapchain(window, base.surface, device),
-        framebuffers(swapchain.createFramebuffers(pipeline.renderPass, device.handle)) {
+        swapchain(window, base.surface, device, pipeline.renderPass) {
     window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) {
       recreateSwapchain(window);
     };

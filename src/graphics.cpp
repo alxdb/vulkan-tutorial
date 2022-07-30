@@ -22,7 +22,7 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
   commandBuffer.beginRenderPass(
       vk::RenderPassBeginInfo{
           .renderPass = *pipeline.renderPass,
-          .framebuffer = *framebuffers[framebuffer_index],
+          .framebuffer = *swapchain.framebuffers[framebuffer_index],
           .renderArea =
               {
                   .offset = {0, 0},
@@ -41,11 +41,8 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
 }
 
 void Graphics::recreateSwapchain(const vkfw::Window &window) {
-  std::cerr << "Recreating Swapchain\n";
   waitIdle();
-
-  swapchain = Swapchain(window, base.surface, device, *swapchain.handle);
-  framebuffers = swapchain.createFramebuffers(pipeline.renderPass, device.handle);
+  swapchain = Swapchain(window, base.surface, device, pipeline.renderPass, *swapchain.handle);
 }
 
 void Graphics::draw(const vkfw::Window &window) {

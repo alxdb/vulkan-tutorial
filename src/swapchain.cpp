@@ -72,34 +72,10 @@ vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &window,
   });
 }
 
-Swapchain::Swapchain(const vkfw::Window &window,
-                     const vk::raii::SurfaceKHR &surface,
-                     const Device &device,
-                     const vk::SwapchainKHR &swapchain)
-    : surfaceCapabilities(device.details.physicalDevice.getSurfaceCapabilitiesKHR(*surface)),
-      extent(determineExtent(window, surfaceCapabilities)),
-      handle(device.handle.createSwapchainKHR({
-          .surface = *surface,
-          .minImageCount = determineMinImageCount(surfaceCapabilities),
-          .imageFormat = device.details.format.format,
-          .imageColorSpace = device.details.format.colorSpace,
-          .imageExtent = extent,
-          .imageArrayLayers = 1,
-          .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
-          .imageSharingMode = vk::SharingMode::eExclusive,
-          .preTransform = surfaceCapabilities.currentTransform,
-          .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-          .presentMode = device.details.presentMode,
-          .clipped = true,
-          .oldSwapchain = swapchain,
-      })),
-      images(createImages(handle, device.handle, device.details.format.format)) {}
-
-Swapchain::Swapchain(const vkfw::Window &window, const vk::raii::SurfaceKHR &surface, const Device &device)
-    : Swapchain(window, surface, device, VK_NULL_HANDLE) {}
-
-std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii::RenderPass &renderPass,
-                                                                 const vk::raii::Device &device) const {
+std::vector<vk::raii::Framebuffer> createFramebuffers(const vk::raii::RenderPass &renderPass,
+                                                      const vk::raii::Device &device,
+                                                      const std::vector<vk::raii::ImageView> &images,
+                                                      const vk::Extent2D &extent) {
   std::vector<vk::raii::Framebuffer> result;
   result.reserve(images.size());
 
@@ -120,3 +96,34 @@ std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii:
 
   return result;
 }
+
+Swapchain::Swapchain(const vkfw::Window &window,
+                     const vk::raii::SurfaceKHR &surface,
+                     const Device &device,
+                     const vk::raii::RenderPass &renderPass,
+                     const vk::SwapchainKHR &swapchain)
+    : surfaceCapabilities(device.details.physicalDevice.getSurfaceCapabilitiesKHR(*surface)),
+      extent(determineExtent(window, surfaceCapabilities)),
+      handle(device.handle.createSwapchainKHR({
+          .surface = *surface,
+          .minImageCount = determineMinImageCount(surfaceCapabilities),
+          .imageFormat = device.details.format.format,
+          .imageColorSpace = device.details.format.colorSpace,
+          .imageExtent = extent,
+          .imageArrayLayers = 1,
+          .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+          .imageSharingMode = vk::SharingMode::eExclusive,
+          .preTransform = surfaceCapabilities.currentTransform,
+          .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+          .presentMode = device.details.presentMode,
+          .clipped = true,
+          .oldSwapchain = swapchain,
+      })),
+      images(createImages(handle, device.handle, device.details.format.format)),
+      framebuffers(createFramebuffers(renderPass, device.handle, images, extent)) {}
+
+Swapchain::Swapchain(const vkfw::Window &window,
+                     const vk::raii::SurfaceKHR &surface,
+                     const Device &device,
+                     const vk::raii::RenderPass &renderPass)
+    : Swapchain(window, surface, device, renderPass, VK_NULL_HANDLE) {}
