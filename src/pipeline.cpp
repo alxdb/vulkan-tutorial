@@ -1,5 +1,7 @@
 #include "pipeline.hpp"
 
+#include "vertex.hpp"
+
 #include "fragment_shader.h"
 #include "vertex_shader.h"
 
@@ -66,8 +68,13 @@ vk::raii::Pipeline createPipeline(const vk::raii::Device &device,
       vk::DynamicState::eViewport,
       vk::DynamicState::eScissor,
   };
+  std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions = {
+      Vertex::bindingDescription,
+  };
   auto dynamicState = vk::PipelineDynamicStateCreateInfo{}.setDynamicStates(dynamicStates);
-  auto vertexInput = vk::PipelineVertexInputStateCreateInfo{};
+  auto vertexInput = vk::PipelineVertexInputStateCreateInfo{}
+                         .setVertexBindingDescriptions(vertexInputBindingDescriptions)
+                         .setVertexAttributeDescriptions(Vertex::attributeDescriptions);
   auto inputAssembly = vk::PipelineInputAssemblyStateCreateInfo{
       .topology = vk::PrimitiveTopology::eTriangleList,
       .primitiveRestartEnable = false,

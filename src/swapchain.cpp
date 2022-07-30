@@ -13,8 +13,8 @@ vk::SurfaceFormatKHR pickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &
 }
 
 vk::PresentModeKHR pickPresentMode(const std::vector<vk::PresentModeKHR> &presentModes) {
-  auto preferedMode = vk::PresentModeKHR::eMailbox;
-  auto presentMode = std::ranges::find(presentModes, preferedMode);
+  auto preferredMode = vk::PresentModeKHR::eMailbox;
+  auto presentMode = std::ranges::find(presentModes, preferredMode);
   if (presentMode != presentModes.end()) {
     return *presentMode;
   } else {

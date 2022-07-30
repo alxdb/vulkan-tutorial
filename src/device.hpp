@@ -25,5 +25,5 @@ struct Device {
 
   Device(const vk::raii::Instance &, const vk::raii::SurfaceKHR &);
 
-  std::array<Frame, 2> createFrames() const;
+  [[nodiscard]] std::array<Frame, 2> createFrames() const;
 };

@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <graphics.hpp>
 
 struct App {

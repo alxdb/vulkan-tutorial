@@ -32,9 +32,10 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
           .setClearValues(clearValues),
       vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.handle);
+  commandBuffer.bindVertexBuffers(0, {*vertexBuffer.buffer}, {0});
   commandBuffer.setViewport(0, viewports);
   commandBuffer.setScissor(0, scissors);
-  commandBuffer.draw(3, 1, 0, 0);
+  commandBuffer.draw(vertices.size(), 1, 0, 0);
   commandBuffer.endRenderPass();
   commandBuffer.end();
 }

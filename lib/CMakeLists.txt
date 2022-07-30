@@ -1,10 +1,11 @@
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 
-if(USE_SYSTEM_GLFW)
-  find_package(glfw3 REQUIRED)
-else()
-  add_subdirectory(glfw)
-endif()
+if (USE_SYSTEM_GLFW)
+    find_package(glfw3 REQUIRED)
+else ()
+    add_subdirectory(glfw)
+endif ()
+add_subdirectory(glm)
 
 add_library(vkfw INTERFACE)
 target_link_libraries(vkfw INTERFACE glfw Vulkan::Vulkan)
