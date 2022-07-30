@@ -9,8 +9,8 @@ struct Vertex {
   static vk::VertexInputBindingDescription bindingDescription;
   static std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions;
 
-  glm::vec2 pos;
-  glm::vec3 color;
+  const glm::vec2 pos;
+  const glm::vec3 color;
 };
 
 struct VertexBuffer {

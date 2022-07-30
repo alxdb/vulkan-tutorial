@@ -8,14 +8,14 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
   std::array<vk::Viewport, 1> viewports = {vk::Viewport{
       .x = 0.0f,
       .y = 0.0f,
-      .width = static_cast<float>(swapchain.details.extent.width),
-      .height = static_cast<float>(swapchain.details.extent.height),
+      .width = static_cast<float>(swapchain.extent.width),
+      .height = static_cast<float>(swapchain.extent.height),
       .minDepth = 0.0f,
       .maxDepth = 1.0f,
   }};
   std::array<vk::Rect2D, 1> scissors = {vk::Rect2D{
       .offset = {0, 0},
-      .extent = swapchain.details.extent,
+      .extent = swapchain.extent,
   }};
 
   commandBuffer.begin({});
@@ -26,7 +26,7 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
           .renderArea =
               {
                   .offset = {0, 0},
-                  .extent = swapchain.details.extent,
+                  .extent = swapchain.extent,
               },
       }
           .setClearValues(clearValues),
@@ -44,8 +44,7 @@ void Graphics::recreateSwapchain(const vkfw::Window &window) {
   std::cerr << "Recreating Swapchain\n";
   waitIdle();
 
-  device.details.determineSurfaceCapabilities(base.surface);
-  swapchain.recreate(window, base.surface, device.handle, device.details.surfaceDetails);
+  swapchain = Swapchain(window, base.surface, device, *swapchain.handle);
   framebuffers = swapchain.createFramebuffers(pipeline.renderPass, device.handle);
 }
 

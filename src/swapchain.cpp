@@ -2,26 +2,6 @@
 
 #include "swapchain.hpp"
 
-vk::SurfaceFormatKHR pickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &formats) {
-  auto preferedFormat = vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
-  auto surfaceFormat = std::ranges::find(formats, preferedFormat);
-  if (surfaceFormat != formats.end()) {
-    return *surfaceFormat;
-  } else {
-    return formats.back();
-  }
-}
-
-vk::PresentModeKHR pickPresentMode(const std::vector<vk::PresentModeKHR> &presentModes) {
-  auto preferredMode = vk::PresentModeKHR::eMailbox;
-  auto presentMode = std::ranges::find(presentModes, preferredMode);
-  if (presentMode != presentModes.end()) {
-    return *presentMode;
-  } else {
-    return vk::PresentModeKHR::eFifo;
-  }
-}
-
 vk::Extent2D determineExtent(const vkfw::Window &window, const vk::SurfaceCapabilitiesKHR &capabilities) {
   if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
     return capabilities.currentExtent;
@@ -32,16 +12,6 @@ vk::Extent2D determineExtent(const vkfw::Window &window, const vk::SurfaceCapabi
         std::clamp(realHeight, capabilities.minImageExtent.height, capabilities.maxImageExtent.height),
     };
   }
-}
-
-Swapchain::Details determineDetails(const vkfw::Window &window, const SurfaceDetails &surfaceDetails) {
-  auto surfaceFormat = pickSurfaceFormat(surfaceDetails.formats);
-  return Swapchain::Details{
-      .format = surfaceFormat.format,
-      .colorSpace = surfaceFormat.colorSpace,
-      .extent = determineExtent(window, surfaceDetails.capabilities),
-      .presentMode = pickPresentMode(surfaceDetails.presentModes),
-  };
 }
 
 uint32_t determineMinImageCount(const vk::SurfaceCapabilitiesKHR &capabilities) {
@@ -79,27 +49,54 @@ std::vector<vk::raii::ImageView> createImages(const vk::raii::SwapchainKHR &swap
   return result;
 }
 
+vk::raii::SwapchainKHR createSwapchain(const vkfw::Window &window,
+                                       const vk::raii::SurfaceKHR &surface,
+                                       const Device &device,
+                                       const vk::SurfaceCapabilitiesKHR &surfaceCapabilities,
+                                       const vk::Extent2D &extent,
+                                       const vk::SwapchainKHR &oldSwapchain) {
+  return device.handle.createSwapchainKHR({
+      .surface = *surface,
+      .minImageCount = determineMinImageCount(surfaceCapabilities),
+      .imageFormat = device.details.format.format,
+      .imageColorSpace = device.details.format.colorSpace,
+      .imageExtent = extent,
+      .imageArrayLayers = 1,
+      .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+      .imageSharingMode = vk::SharingMode::eExclusive,
+      .preTransform = surfaceCapabilities.currentTransform,
+      .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+      .presentMode = device.details.presentMode,
+      .clipped = true,
+      .oldSwapchain = oldSwapchain,
+  });
+}
+
 Swapchain::Swapchain(const vkfw::Window &window,
                      const vk::raii::SurfaceKHR &surface,
-                     const vk::raii::Device &device,
-                     const SurfaceDetails &surfaceDetails)
-    : details(determineDetails(window, surfaceDetails)),
-      handle(device.createSwapchainKHR({
+                     const Device &device,
+                     const vk::SwapchainKHR &swapchain)
+    : surfaceCapabilities(device.details.physicalDevice.getSurfaceCapabilitiesKHR(*surface)),
+      extent(determineExtent(window, surfaceCapabilities)),
+      handle(device.handle.createSwapchainKHR({
           .surface = *surface,
-          .minImageCount = determineMinImageCount(surfaceDetails.capabilities),
-          .imageFormat = details.format,
-          .imageColorSpace = details.colorSpace,
-          .imageExtent = details.extent,
+          .minImageCount = determineMinImageCount(surfaceCapabilities),
+          .imageFormat = device.details.format.format,
+          .imageColorSpace = device.details.format.colorSpace,
+          .imageExtent = extent,
           .imageArrayLayers = 1,
           .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
           .imageSharingMode = vk::SharingMode::eExclusive,
-          .preTransform = surfaceDetails.capabilities.currentTransform,
+          .preTransform = surfaceCapabilities.currentTransform,
           .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-          .presentMode = details.presentMode,
+          .presentMode = device.details.presentMode,
           .clipped = true,
-          .oldSwapchain = VK_NULL_HANDLE,
+          .oldSwapchain = swapchain,
       })),
-      images(createImages(handle, device, details.format)) {}
+      images(createImages(handle, device.handle, device.details.format.format)) {}
+
+Swapchain::Swapchain(const vkfw::Window &window, const vk::raii::SurfaceKHR &surface, const Device &device)
+    : Swapchain(window, surface, device, VK_NULL_HANDLE) {}
 
 std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii::RenderPass &renderPass,
                                                                  const vk::raii::Device &device) const {
@@ -112,8 +109,8 @@ std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii:
     auto createInfo =
         vk::FramebufferCreateInfo{
             .renderPass = *renderPass,
-            .width = details.extent.width,
-            .height = details.extent.height,
+            .width = extent.width,
+            .height = extent.height,
             .layers = 1,
         }
             .setAttachments(attachments);
@@ -122,29 +119,4 @@ std::vector<vk::raii::Framebuffer> Swapchain::createFramebuffers(const vk::raii:
   });
 
   return result;
-}
-
-void Swapchain::recreate(const vkfw::Window &window,
-                         const vk::raii::SurfaceKHR &surface,
-                         const vk::raii::Device &device,
-                         const SurfaceDetails &surfaceDetails) {
-  device.waitIdle();
-
-  details = determineDetails(window, surfaceDetails);
-  handle = device.createSwapchainKHR({
-      .surface = *surface,
-      .minImageCount = determineMinImageCount(surfaceDetails.capabilities),
-      .imageFormat = details.format,
-      .imageColorSpace = details.colorSpace,
-      .imageExtent = details.extent,
-      .imageArrayLayers = 1,
-      .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
-      .imageSharingMode = vk::SharingMode::eExclusive,
-      .preTransform = surfaceDetails.capabilities.currentTransform,
-      .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-      .presentMode = details.presentMode,
-      .clipped = true,
-      .oldSwapchain = *handle,
-  });
-  images = createImages(handle, device, details.format);
 }

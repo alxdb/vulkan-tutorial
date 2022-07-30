@@ -8,7 +8,6 @@ add_library(
         graphics.cpp graphics.hpp
         pipeline.cpp pipeline.hpp
         swapchain.cpp swapchain.hpp
-        surface_details.hpp
         vertex.cpp vertex.hpp
 )
 

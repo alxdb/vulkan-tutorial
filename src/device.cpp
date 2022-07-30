@@ -4,10 +4,28 @@
 #include <ranges>
 #include <unordered_set>
 
-const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-};
+const std::array<const char *, 1> REQUIRED_DEVICE_EXTENSION_NAMES = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 const std::array<float, 1> QUEUE_PRIORITIES = {1.0};
+
+vk::SurfaceFormatKHR pickSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &formats) {
+  auto preferredFormat = vk::SurfaceFormatKHR{vk::Format::eB8G8R8A8Srgb, vk::ColorSpaceKHR::eSrgbNonlinear};
+  auto surfaceFormat = std::ranges::find(formats, preferredFormat);
+  if (surfaceFormat != formats.end()) {
+    return *surfaceFormat;
+  } else {
+    return formats.back();
+  }
+}
+
+vk::PresentModeKHR pickPresentMode(const std::vector<vk::PresentModeKHR> &presentModes) {
+  auto preferredMode = vk::PresentModeKHR::eMailbox;
+  auto presentMode = std::ranges::find(presentModes, preferredMode);
+  if (presentMode != presentModes.end()) {
+    return *presentMode;
+  } else {
+    return vk::PresentModeKHR::eFifo;
+  }
+}
 
 std::optional<Device::Details> isSuitable(const vk::raii::PhysicalDevice &physicalDevice,
                                           const vk::raii::SurfaceKHR &surface) {
@@ -45,12 +63,8 @@ std::optional<Device::Details> isSuitable(const vk::raii::PhysicalDevice &physic
   return Device::Details{
       .queueFamilyIndex = queueFamilyIndex,
       .physicalDevice = physicalDevice,
-      .surfaceDetails =
-          {
-              .capabilities = physicalDevice.getSurfaceCapabilitiesKHR(*surface),
-              .formats = surfaceFormats,
-              .presentModes = presentModes,
-          },
+      .format = pickSurfaceFormat(surfaceFormats),
+      .presentMode = pickPresentMode(presentModes),
   };
 }
 
