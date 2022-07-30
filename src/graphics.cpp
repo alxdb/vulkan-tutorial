@@ -48,8 +48,8 @@ void Graphics::recreateSwapchain(const vkfw::Window &window) {
 void Graphics::draw(const vkfw::Window &window) {
   const Frame &currentFrame = frames[currentFrameIndex];
 
-  if (device.handle.waitForFences({*currentFrame.inFlight}, true, std::numeric_limits<uint64_t>::max()) !=
-      vk::Result::eSuccess) {
+  auto fenceResult = device.handle.waitForFences({*currentFrame.inFlight}, true, std::numeric_limits<uint64_t>::max());
+  if (fenceResult != vk::Result::eSuccess) {
     throw std::runtime_error("Failed waiting for fence");
   }
 
