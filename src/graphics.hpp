@@ -34,19 +34,7 @@ class Graphics {
   void waitIdle() const { device.handle.waitIdle(); };
 
 public:
-  Graphics(const vkfw::Window &window)
-      : base(window),
-        device(base.instance, base.surface),
-        pipeline(device.details.format.format, device.handle),
-        frames(device.createFrames()),
-        vertexBuffer(device.handle, device.details.physicalDevice, vertices),
-        swapchain(window, base.surface, device, pipeline.renderPass) {
-    window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) {
-      recreateSwapchain(window);
-    };
-    vertexBuffer.copyData(device.handle, device.commandPool, device.queue);
-  }
-
+  Graphics(const vkfw::Window &window);
   ~Graphics() { waitIdle(); };
 
   void draw(const vkfw::Window &);

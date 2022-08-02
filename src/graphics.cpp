@@ -3,6 +3,17 @@
 #include <iostream>
 #include <ranges>
 
+Graphics::Graphics(const vkfw::Window &window)
+    : base(window),
+      device(base.instance, base.surface),
+      pipeline(device.details.format.format, device.handle),
+      frames(device.createFrames()),
+      vertexBuffer(device.handle, device.details.physicalDevice, vertices),
+      swapchain(window, base.surface, device, pipeline.renderPass) {
+  window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) { recreateSwapchain(window); };
+  vertexBuffer.copyData(device.handle, device.commandPool, device.queue);
+}
+
 void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, size_t framebuffer_index) const {
   std::array<vk::ClearValue, 1> clearValues = {{{{{{0.0f, 0.0f, 0.0f, 1.0f}}}}}};
   std::array<vk::Viewport, 1> viewports = {vk::Viewport{
