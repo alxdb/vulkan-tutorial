@@ -1,11 +1,11 @@
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 
-find_package(glfw3)
+find_package(glfw3 QUIET)
 if(NOT glfw3_FOUND)
   add_subdirectory(glfw)
 endif()
 
-find_package(glm)
+find_package(glm QUIET)
 if(NOT glm_FOUND)
   add_subdirectory(glm)
 endif()
