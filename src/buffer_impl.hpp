@@ -39,3 +39,36 @@ void HostBuffer<T>::copyData() const {
   memcpy(mappedMemory, this->data.data(), this->size);
   this->memory.unmapMemory();
 }
+
+template <typename T>
+StagedBuffer<T>::StagedBuffer(const vk::raii::Device &device,
+                              const vk::raii::PhysicalDevice &physicalDevice,
+                              const std::vector<T> &data,
+                              vk::BufferUsageFlags usage)
+    : stagingBuffer(device, physicalDevice, data, vk::BufferUsageFlagBits::eTransferSrc),
+      deviceBuffer(device,
+                   physicalDevice,
+                   stagingBuffer.size,
+                   vk::BufferUsageFlagBits::eTransferDst | usage,
+                   vk::MemoryPropertyFlagBits::eDeviceLocal) {}
+
+template <typename T>
+void StagedBuffer<T>::copyData(const vk::raii::Device &device,
+                               const vk::raii::CommandPool &commandPool,
+                               const vk::raii::Queue &queue) const {
+  stagingBuffer.copyData();
+
+  auto commandBuffer = std::move(device.allocateCommandBuffers({
+      .commandPool = *commandPool,
+      .level = vk::CommandBufferLevel::ePrimary,
+      .commandBufferCount = 1,
+  })[0]);
+
+  commandBuffer.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
+  commandBuffer.copyBuffer(*stagingBuffer.buffer, *deviceBuffer.buffer, {{.size = stagingBuffer.size}});
+  commandBuffer.end();
+
+  auto commandBuffers = {*commandBuffer};
+  queue.submit({vk::SubmitInfo{}.setCommandBuffers(commandBuffers)});
+  queue.waitIdle();
+}

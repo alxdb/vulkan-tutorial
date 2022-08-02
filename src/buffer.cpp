@@ -45,33 +45,3 @@ std::array<vk::VertexInputAttributeDescription, 2> Vertex::attributeDescriptions
         .offset = offsetof(Vertex, color),
     },
 };
-
-VertexBuffer::VertexBuffer(const vk::raii::Device &device,
-                           const vk::raii::PhysicalDevice &physicalDevice,
-                           const std::vector<Vertex> &vertices)
-    : stagingBuffer(device, physicalDevice, vertices, vk::BufferUsageFlagBits::eTransferSrc),
-      deviceBuffer(device,
-                   physicalDevice,
-                   stagingBuffer.size,
-                   vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer,
-                   vk::MemoryPropertyFlagBits::eDeviceLocal) {}
-
-void VertexBuffer::copyData(const vk::raii::Device &device,
-                            const vk::raii::CommandPool &commandPool,
-                            const vk::raii::Queue &queue) const {
-  stagingBuffer.copyData();
-
-  auto commandBuffer = std::move(device.allocateCommandBuffers({
-      .commandPool = *commandPool,
-      .level = vk::CommandBufferLevel::ePrimary,
-      .commandBufferCount = 1,
-  })[0]);
-
-  commandBuffer.begin({.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
-  commandBuffer.copyBuffer(*stagingBuffer.buffer, *deviceBuffer.buffer, {{.size = stagingBuffer.size}});
-  commandBuffer.end();
-
-  auto commandBuffers = {*commandBuffer};
-  queue.submit({vk::SubmitInfo{}.setCommandBuffers(commandBuffers)});
-  queue.waitIdle();
-}

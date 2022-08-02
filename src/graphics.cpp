@@ -8,7 +8,7 @@ Graphics::Graphics(const vkfw::Window &window)
       device(base.instance, base.surface),
       pipeline(device.details.format.format, device.handle),
       frames(device.createFrames()),
-      vertexBuffer(device.handle, device.details.physicalDevice, vertices),
+      vertexBuffer(device.handle, device.details.physicalDevice, vertices, vk::BufferUsageFlagBits::eVertexBuffer),
       swapchain(window, base.surface, device, pipeline.renderPass) {
   window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) { recreateSwapchain(window); };
   vertexBuffer.copyData(device.handle, device.commandPool, device.queue);

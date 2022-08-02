@@ -35,11 +35,15 @@ struct Vertex {
   glm::vec3 color;
 };
 
-struct VertexBuffer {
-  const HostBuffer<Vertex> stagingBuffer;
-  const Buffer<Vertex> deviceBuffer;
+template <typename T>
+struct StagedBuffer {
+  const HostBuffer<T> stagingBuffer;
+  const Buffer<T> deviceBuffer;
 
-  VertexBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, const std::vector<Vertex> &);
+  StagedBuffer(const vk::raii::Device &,
+               const vk::raii::PhysicalDevice &,
+               const std::vector<T> &,
+               vk::BufferUsageFlags);
 
   void copyData(const vk::raii::Device &, const vk::raii::CommandPool &, const vk::raii::Queue &) const;
 };
