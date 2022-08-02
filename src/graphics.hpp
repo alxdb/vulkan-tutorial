@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <vector>
 
 #include <vkfw/vkfw.hpp>
@@ -34,6 +33,7 @@ class Graphics {
   Swapchain swapchain;
 
   void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
+  void recreateSwapchain(const vkfw::Window &);
   void waitIdle() const { device.handle.waitIdle(); };
 
 public:
@@ -41,5 +41,4 @@ public:
   ~Graphics() { waitIdle(); };
 
   void draw(const vkfw::Window &);
-  void recreateSwapchain(const vkfw::Window &);
 };
