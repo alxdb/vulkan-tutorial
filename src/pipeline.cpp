@@ -1,6 +1,6 @@
 #include "pipeline.hpp"
 
-#include "vertex.hpp"
+#include "buffer.hpp"
 
 #include "fragment_shader.h"
 #include "vertex_shader.h"

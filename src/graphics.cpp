@@ -32,7 +32,7 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
           .setClearValues(clearValues),
       vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.handle);
-  commandBuffer.bindVertexBuffers(0, {*vertexBuffer.buffer}, {0});
+  commandBuffer.bindVertexBuffers(0, {*vertexBuffer.deviceBuffer.buffer}, {0});
   commandBuffer.setViewport(0, viewports);
   commandBuffer.setScissor(0, scissors);
   commandBuffer.draw(vertices.size(), 1, 0, 0);
@@ -70,7 +70,7 @@ void Graphics::draw(const vkfw::Window &window) {
   currentFrame.commandBuffer.reset();
   recordCommandBuffer(currentFrame.commandBuffer, imageIndex);
 
-  std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+  auto waitStages = {static_cast<vk::PipelineStageFlags>(vk::PipelineStageFlagBits::eColorAttachmentOutput)};
   device.queue.submit(vk::SubmitInfo{}
                           .setWaitSemaphores(*currentFrame.imageAvailable)
                           .setWaitDstStageMask(waitStages)
@@ -78,8 +78,8 @@ void Graphics::draw(const vkfw::Window &window) {
                           .setSignalSemaphores(*currentFrame.renderFinished),
                       *currentFrame.inFlight);
 
-  std::array<vk::SwapchainKHR, 1> swapchains = {*swapchain.handle};
-  std::array<unsigned int, 1> imageIndices = {imageIndex};
+  auto swapchains = {*swapchain.handle};
+  auto imageIndices = {imageIndex};
   auto presentResult = device.queue.presentKHR(vk::PresentInfoKHR{}
                                                    .setWaitSemaphores(*currentFrame.renderFinished)
                                                    .setSwapchains(swapchains)

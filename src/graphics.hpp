@@ -7,11 +7,11 @@
 #include <vulkan/vulkan_raii.hpp>
 
 #include "base.hpp"
+#include "buffer.hpp"
 #include "device.hpp"
 #include "frame.hpp"
 #include "pipeline.hpp"
 #include "swapchain.hpp"
-#include "vertex.hpp"
 
 class Graphics {
   const Base base;
@@ -44,6 +44,7 @@ public:
     window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) {
       recreateSwapchain(window);
     };
+    vertexBuffer.copyData(device.handle, device.commandPool, device.queue);
   }
 
   ~Graphics() { waitIdle(); };

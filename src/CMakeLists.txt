@@ -8,7 +8,7 @@ add_library(
   graphics.cpp graphics.hpp
   pipeline.cpp pipeline.hpp
   swapchain.cpp swapchain.hpp
-  vertex.cpp vertex.hpp
+  buffer.cpp buffer.hpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC vkfw shaders)
