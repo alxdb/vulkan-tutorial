@@ -6,7 +6,7 @@
 #include "vertex_shader.h"
 
 vk::raii::RenderPass createRenderPass(const vk::Format &format, const vk::raii::Device &device) {
-  std::array<vk::AttachmentDescription, 1> attachments = {
+  auto attachments = {
       vk::AttachmentDescription{
           .format = format,
           .samples = vk::SampleCountFlagBits::e1,
@@ -18,19 +18,19 @@ vk::raii::RenderPass createRenderPass(const vk::Format &format, const vk::raii::
           .finalLayout = vk::ImageLayout::ePresentSrcKHR,
       },
   };
-  std::array<vk::AttachmentReference, 1> colorAttachmentReferences = {
+  auto colorAttachmentReferences = {
       vk::AttachmentReference{
           .attachment = 0,
           .layout = vk::ImageLayout::eColorAttachmentOptimal,
       },
   };
-  std::array<vk::SubpassDescription, 1> subpasses = {
+  auto subpasses = {
       vk::SubpassDescription{
           .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
       }
           .setColorAttachments(colorAttachmentReferences),
   };
-  std::array<vk::SubpassDependency, 1> dependencies = {
+  auto dependencies = {
       vk::SubpassDependency{
           .srcSubpass = VK_SUBPASS_EXTERNAL,
           .dstSubpass = 0,
@@ -50,7 +50,7 @@ vk::raii::Pipeline createPipeline(const vk::raii::Device &device,
                                   const vk::raii::RenderPass &renderPass) {
   auto vertexShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(vertex_shader_code));
   auto fragmentShader = device.createShaderModule(vk::ShaderModuleCreateInfo{}.setCode(fragment_shader_code));
-  std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages = {
+  auto shaderStages = {
       vk::PipelineShaderStageCreateInfo{
           .stage = vk::ShaderStageFlagBits::eVertex,
           .module = *vertexShader,
@@ -64,11 +64,11 @@ vk::raii::Pipeline createPipeline(const vk::raii::Device &device,
   };
 
   // fixed functions
-  std::array<vk::DynamicState, 2> dynamicStates = {
+  auto dynamicStates = {
       vk::DynamicState::eViewport,
       vk::DynamicState::eScissor,
   };
-  std::array<vk::VertexInputBindingDescription, 1> vertexInputBindingDescriptions = {
+  auto vertexInputBindingDescriptions = {
       Vertex::bindingDescription,
   };
   auto dynamicState = vk::PipelineDynamicStateCreateInfo{}.setDynamicStates(dynamicStates);
