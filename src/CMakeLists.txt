@@ -8,7 +8,7 @@ add_library(
   graphics.cpp graphics.hpp
   pipeline.cpp pipeline.hpp
   swapchain.cpp swapchain.hpp
-  buffer.cpp buffer.hpp
+  buffer.cpp buffer.hpp buffer_impl.hpp
 )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC vkfw glm shaders)

@@ -2,27 +2,6 @@
 
 #include "buffer.hpp"
 
-vk::VertexInputBindingDescription Vertex::bindingDescription = {
-    .binding = 0,
-    .stride = sizeof(Vertex),
-    .inputRate = vk::VertexInputRate::eVertex,
-};
-
-std::array<vk::VertexInputAttributeDescription, 2> Vertex::attributeDescriptions = {
-    vk::VertexInputAttributeDescription{
-        .location = 0,
-        .binding = 0,
-        .format = vk::Format::eR32G32Sfloat,
-        .offset = offsetof(Vertex, pos),
-    },
-    vk::VertexInputAttributeDescription{
-        .location = 1,
-        .binding = 0,
-        .format = vk::Format::eR32G32B32Sfloat,
-        .offset = offsetof(Vertex, color),
-    },
-};
-
 vk::raii::DeviceMemory allocateMemory(const vk::raii::Device &device,
                                       const vk::raii::PhysicalDevice &physicalDevice,
                                       const vk::raii::Buffer &buffer,
@@ -45,6 +24,27 @@ vk::raii::DeviceMemory allocateMemory(const vk::raii::Device &device,
       .memoryTypeIndex = memoryTypeIndex,
   });
 }
+
+vk::VertexInputBindingDescription Vertex::bindingDescription = {
+    .binding = 0,
+    .stride = sizeof(Vertex),
+    .inputRate = vk::VertexInputRate::eVertex,
+};
+
+std::array<vk::VertexInputAttributeDescription, 2> Vertex::attributeDescriptions = {
+    vk::VertexInputAttributeDescription{
+        .location = 0,
+        .binding = 0,
+        .format = vk::Format::eR32G32Sfloat,
+        .offset = offsetof(Vertex, pos),
+    },
+    vk::VertexInputAttributeDescription{
+        .location = 1,
+        .binding = 0,
+        .format = vk::Format::eR32G32B32Sfloat,
+        .offset = offsetof(Vertex, color),
+    },
+};
 
 VertexBuffer::VertexBuffer(const vk::raii::Device &device,
                            const vk::raii::PhysicalDevice &physicalDevice,
