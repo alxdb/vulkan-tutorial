@@ -1,8 +1,7 @@
 #pragma once
 
-#include <array>
+#include <vector>
 
-#include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 template <typename T>
@@ -25,14 +24,6 @@ struct HostBuffer : Buffer<T> {
   HostBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, const std::vector<T> &, vk::BufferUsageFlags);
 
   void copyData() const;
-};
-
-struct Vertex {
-  static vk::VertexInputBindingDescription bindingDescription;
-  static std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions;
-
-  glm::vec2 pos;
-  glm::vec3 color;
 };
 
 template <typename T>

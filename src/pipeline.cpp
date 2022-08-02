@@ -1,9 +1,28 @@
 #include "pipeline.hpp"
 
-#include "buffer.hpp"
-
 #include "fragment_shader.h"
 #include "vertex_shader.h"
+
+vk::VertexInputBindingDescription Vertex::bindingDescription = {
+    .binding = 0,
+    .stride = sizeof(Vertex),
+    .inputRate = vk::VertexInputRate::eVertex,
+};
+
+std::array<vk::VertexInputAttributeDescription, 2> Vertex::attributeDescriptions = {
+    vk::VertexInputAttributeDescription{
+        .location = 0,
+        .binding = 0,
+        .format = vk::Format::eR32G32Sfloat,
+        .offset = offsetof(Vertex, pos),
+    },
+    vk::VertexInputAttributeDescription{
+        .location = 1,
+        .binding = 0,
+        .format = vk::Format::eR32G32B32Sfloat,
+        .offset = offsetof(Vertex, color),
+    },
+};
 
 vk::raii::RenderPass createRenderPass(const vk::Format &format, const vk::raii::Device &device) {
   auto attachments = {
