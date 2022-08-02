@@ -9,9 +9,11 @@ Graphics::Graphics(const vkfw::Window &window)
       pipeline(device.details.format.format, device.handle),
       frames(device.createFrames()),
       vertexBuffer(device.handle, device.details.physicalDevice, vertices, vk::BufferUsageFlagBits::eVertexBuffer),
+      indexBuffer(device.handle, device.details.physicalDevice, indices, vk::BufferUsageFlagBits::eIndexBuffer),
       swapchain(window, base.surface, device, pipeline.renderPass) {
   window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) { recreateSwapchain(window); };
   vertexBuffer.copyData(device.handle, device.commandPool, device.queue);
+  indexBuffer.copyData(device.handle, device.commandPool, device.queue);
 }
 
 void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, size_t framebuffer_index) const {
@@ -44,9 +46,10 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
       vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.handle);
   commandBuffer.bindVertexBuffers(0, {*vertexBuffer.deviceBuffer.buffer}, {0});
+  commandBuffer.bindIndexBuffer(*indexBuffer.deviceBuffer.buffer, 0, vk::IndexType::eUint16);
   commandBuffer.setViewport(0, viewports);
   commandBuffer.setScissor(0, scissors);
-  commandBuffer.draw(vertices.size(), 1, 0, 0);
+  commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
   commandBuffer.endRenderPass();
   commandBuffer.end();
 }

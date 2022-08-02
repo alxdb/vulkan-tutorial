@@ -22,11 +22,14 @@ class Graphics {
   const std::array<Frame, 2> frames;
 
   const std::vector<Vertex> vertices = {
-      {{+0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-      {{+0.5f, +0.5f}, {0.0f, 1.0f, 0.0f}},
-      {{-0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+      {{+0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+      {{+0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
+      {{-0.5f, +0.5f}, {1.0f, 1.0f, 1.0f}},
   };
   const StagedBuffer<Vertex> vertexBuffer;
+  const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
+  const StagedBuffer<uint16_t> indexBuffer;
 
   Swapchain swapchain;
 
