@@ -5,14 +5,6 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-struct Vertex {
-  static vk::VertexInputBindingDescription bindingDescription;
-  static std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions;
-
-  glm::vec2 pos;
-  glm::vec3 color;
-};
-
 vk::raii::DeviceMemory allocateMemory(const vk::raii::Device &,
                                       const vk::raii::PhysicalDevice &,
                                       const vk::raii::Buffer &,
@@ -60,6 +52,14 @@ struct HostBuffer : Buffer<T> {
     memcpy(mappedMemory, this->data.data(), this->size);
     this->memory.unmapMemory();
   }
+};
+
+struct Vertex {
+  static vk::VertexInputBindingDescription bindingDescription;
+  static std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions;
+
+  glm::vec2 pos;
+  glm::vec3 color;
 };
 
 struct VertexBuffer {
