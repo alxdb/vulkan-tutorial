@@ -120,9 +120,17 @@ std::array<Frame, 2> Device::createFrames(const vk::raii::DescriptorSetLayout &d
       .level = vk::CommandBufferLevel::ePrimary,
       .commandBufferCount = 2,
   });
-  std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts{*descriptorSetLayout, *descriptorSetLayout};
-  auto descriptorSets = handle.allocateDescriptorSets(
-      vk::DescriptorSetAllocateInfo{.descriptorPool = *descriptorPool}.setSetLayouts(descriptorSetLayouts));
+  auto descriptorSetLayouts = {
+      *descriptorSetLayout,
+      *descriptorSetLayout,
+  };
+
+  auto descriptorSetAllocateInfo =
+      vk::DescriptorSetAllocateInfo{
+          .descriptorPool = *descriptorPool,
+      }
+          .setSetLayouts(descriptorSetLayouts);
+  auto descriptorSets = handle.allocateDescriptorSets(descriptorSetAllocateInfo);
 
   return {Frame(std::move(commandBuffers[0]), std::move(descriptorSets[0]), handle, details.physicalDevice),
           Frame(std::move(commandBuffers[1]), std::move(descriptorSets[1]), handle, details.physicalDevice)};
