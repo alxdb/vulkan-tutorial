@@ -27,6 +27,13 @@ struct HostBuffer : Buffer<T> {
 };
 
 template <typename T>
+struct DynamicHostBuffer : Buffer<T> {
+  DynamicHostBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, vk::BufferUsageFlags);
+
+  void copyData(const T &data) const;
+};
+
+template <typename T>
 struct StagedBuffer {
   const HostBuffer<T> stagingBuffer;
   const Buffer<T> deviceBuffer;

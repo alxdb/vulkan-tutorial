@@ -18,8 +18,9 @@ struct Device {
   const vk::raii::Device handle;
   const vk::raii::Queue queue;
   const vk::raii::CommandPool commandPool;
+  const vk::raii::DescriptorPool descriptorPool;
 
   Device(const vk::raii::Instance &, const vk::raii::SurfaceKHR &);
 
-  [[nodiscard]] std::array<Frame, 2> createFrames() const;
+  [[nodiscard]] std::array<Frame, 2> createFrames(const vk::raii::DescriptorSetLayout &) const;
 };

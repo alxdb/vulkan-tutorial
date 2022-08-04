@@ -29,11 +29,13 @@ class Graphics {
   const StagedBuffer<Vertex> vertexBuffer;
   const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
   const StagedBuffer<uint16_t> indexBuffer;
+  UniformBufferObject ubo{};
 
   Swapchain swapchain;
 
   void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
   void recreateSwapchain(const vkfw::Window &);
+  void updateUbo();
   void waitIdle() const { device.handle.waitIdle(); };
 
 public:

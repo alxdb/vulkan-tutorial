@@ -41,6 +41,23 @@ void HostBuffer<T>::copyData() const {
 }
 
 template <typename T>
+DynamicHostBuffer<T>::DynamicHostBuffer(const vk::raii::Device &device,
+                                        const vk::raii::PhysicalDevice &physicalDevice,
+                                        vk::BufferUsageFlags usage)
+    : Buffer<T>(device,
+                physicalDevice,
+                sizeof(T),
+                usage,
+                vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible) {}
+
+template <typename T>
+void DynamicHostBuffer<T>::copyData(const T &data) const {
+  void *mappedMemory = this->memory.mapMemory(0, this->size);
+  memcpy(mappedMemory, &data, this->size);
+  this->memory.unmapMemory();
+}
+
+template <typename T>
 StagedBuffer<T>::StagedBuffer(const vk::raii::Device &device,
                               const vk::raii::PhysicalDevice &physicalDevice,
                               const std::vector<T> &data,

@@ -24,6 +24,22 @@ std::array<vk::VertexInputAttributeDescription, 2> Vertex::attributeDescriptions
     },
 };
 
+vk::raii::DescriptorSetLayout createDescriptorSetLayout(const vk::raii::Device &device) {
+  auto layoutBindings = {vk::DescriptorSetLayoutBinding{
+      .binding = 0,
+      .descriptorType = vk::DescriptorType::eUniformBuffer,
+      .descriptorCount = 1,
+      .stageFlags = vk::ShaderStageFlagBits::eVertex,
+  }};
+  return device.createDescriptorSetLayout(vk::DescriptorSetLayoutCreateInfo{}.setBindings(layoutBindings));
+}
+
+vk::raii::PipelineLayout createPipelineLayout(const vk::raii::Device &device,
+                                              const vk::raii::DescriptorSetLayout &descriptorSetLayout) {
+  auto descriptorSetLayouts = {*descriptorSetLayout};
+  return device.createPipelineLayout(vk::PipelineLayoutCreateInfo{}.setSetLayouts(descriptorSetLayouts));
+}
+
 vk::raii::RenderPass createRenderPass(const vk::Format &format, const vk::raii::Device &device) {
   auto attachments = {
       vk::AttachmentDescription{
@@ -107,7 +123,7 @@ vk::raii::Pipeline createPipeline(const vk::raii::Device &device,
       .rasterizerDiscardEnable = false,
       .polygonMode = vk::PolygonMode::eFill,
       .cullMode = vk::CullModeFlagBits::eBack,
-      .frontFace = vk::FrontFace::eClockwise,
+      .frontFace = vk::FrontFace::eCounterClockwise,
       .depthBiasEnable = false,
       .lineWidth = 1.0f,
   };
@@ -146,6 +162,7 @@ vk::raii::Pipeline createPipeline(const vk::raii::Device &device,
 }
 
 Pipeline::Pipeline(const vk::Format &format, const vk::raii::Device &device)
-    : layout(device.createPipelineLayout({})),
+    : descriptorSetLayout(createDescriptorSetLayout(device)),
+      pipelineLayout(createPipelineLayout(device, descriptorSetLayout)),
       renderPass(createRenderPass(format, device)),
-      handle(createPipeline(device, layout, renderPass)) {}
+      handle(createPipeline(device, pipelineLayout, renderPass)) {}

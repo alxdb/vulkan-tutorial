@@ -93,6 +93,17 @@ vk::raii::Device createDevice(const Device::Details &details) {
   };
 }
 
+vk::raii::DescriptorPool createDescriptorPool(const vk::raii::Device &device) {
+  auto poolSizes = {vk::DescriptorPoolSize{.descriptorCount = 2}};
+  auto createInfo =
+      vk::DescriptorPoolCreateInfo{
+          .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+          .maxSets = 2,
+      }
+          .setPoolSizes(poolSizes);
+  return device.createDescriptorPool(createInfo);
+}
+
 Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &surface)
     : details(findSuitableDevice(instance, surface)),
       handle(createDevice(details)),
@@ -100,14 +111,19 @@ Device::Device(const vk::raii::Instance &instance, const vk::raii::SurfaceKHR &s
       commandPool(handle.createCommandPool({
           .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
           .queueFamilyIndex = details.queueFamilyIndex,
-      })) {}
+      })),
+      descriptorPool(createDescriptorPool(handle)) {}
 
-std::array<Frame, 2> Device::createFrames() const {
+std::array<Frame, 2> Device::createFrames(const vk::raii::DescriptorSetLayout &descriptorSetLayout) const {
   auto commandBuffers = handle.allocateCommandBuffers({
       .commandPool = *commandPool,
       .level = vk::CommandBufferLevel::ePrimary,
       .commandBufferCount = 2,
   });
+  std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts{*descriptorSetLayout, *descriptorSetLayout};
+  auto descriptorSets = handle.allocateDescriptorSets(
+      vk::DescriptorSetAllocateInfo{.descriptorPool = *descriptorPool}.setSetLayouts(descriptorSetLayouts));
 
-  return {Frame(std::move(commandBuffers[0]), handle), Frame(std::move(commandBuffers[1]), handle)};
+  return {Frame(std::move(commandBuffers[0]), std::move(descriptorSets[0]), handle, details.physicalDevice),
+          Frame(std::move(commandBuffers[1]), std::move(descriptorSets[1]), handle, details.physicalDevice)};
 }
