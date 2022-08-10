@@ -9,8 +9,8 @@ add_library(
   pipeline.cpp pipeline.hpp
   swapchain.cpp swapchain.hpp
   buffer.cpp buffer.hpp buffer_impl.hpp
-  mesh.cpp mesh.hpp
+  drawable.cpp drawable.hpp
 )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC vkfw glm shaders)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(${PROJECT_NAME} PUBLIC vkfw shaders)
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${GLM_INCLUDE_DIR})

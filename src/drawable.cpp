@@ -1,4 +1,4 @@
-#include "mesh.hpp"
+#include "drawable.hpp"
 
 DrawableBuffers::DrawableBuffers(const vk::raii::Device &device,
                                  const vk::raii::PhysicalDevice &physicalDevice,

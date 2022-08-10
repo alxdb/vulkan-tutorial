@@ -8,8 +8,8 @@
 #include "base.hpp"
 #include "buffer.hpp"
 #include "device.hpp"
+#include "drawable.hpp"
 #include "frame.hpp"
-#include "mesh.hpp"
 #include "pipeline.hpp"
 #include "swapchain.hpp"
 
