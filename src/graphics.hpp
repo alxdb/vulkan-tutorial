@@ -9,6 +9,7 @@
 #include "buffer.hpp"
 #include "device.hpp"
 #include "frame.hpp"
+#include "mesh.hpp"
 #include "pipeline.hpp"
 #include "swapchain.hpp"
 
@@ -20,23 +21,27 @@ class Graphics {
   size_t currentFrameIndex = 0;
   const std::array<Frame, 2> frames;
 
-  const std::vector<Vertex> vertices = {
-      {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-      {{+0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-      {{+0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
-      {{-0.5f, +0.5f}, {1.0f, 1.0f, 1.0f}},
+  const Drawable quad = {
+      .vertices =
+          {
+              {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+              {{+0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+              {{+0.5f, +0.5f}, {0.0f, 0.0f, 1.0f}},
+              {{-0.5f, +0.5f}, {1.0f, 1.0f, 1.0f}},
+          },
+      .indices = {0, 1, 2, 2, 3, 0},
   };
-  const StagedBuffer<Vertex> vertexBuffer;
-  const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0};
-  const StagedBuffer<uint16_t> indexBuffer;
+  const DrawableBuffers quadBuffers;
+
   UniformBufferObject ubo{};
 
   Swapchain swapchain;
 
   void recordCommandBuffer(const vk::raii::CommandBuffer &, size_t) const;
   void recreateSwapchain(const vkfw::Window &);
-  void updateUbo();
   void waitIdle() const { device.handle.waitIdle(); };
+
+  void updateUbo();
 
 public:
   Graphics(const vkfw::Window &window);

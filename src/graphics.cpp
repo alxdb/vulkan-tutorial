@@ -12,12 +12,10 @@ Graphics::Graphics(const vkfw::Window &window)
       device(base.instance, base.surface),
       pipeline(device.details.format.format, device.handle),
       frames(device.createFrames(pipeline.descriptorSetLayout)),
-      vertexBuffer(device.handle, device.details.physicalDevice, vertices, vk::BufferUsageFlagBits::eVertexBuffer),
-      indexBuffer(device.handle, device.details.physicalDevice, indices, vk::BufferUsageFlagBits::eIndexBuffer),
+      quadBuffers(device.handle, device.details.physicalDevice, quad),
       swapchain(window, base.surface, device, pipeline.renderPass) {
   window.callbacks()->on_framebuffer_resize = [&](const vkfw::Window &, size_t, size_t) { recreateSwapchain(window); };
-  vertexBuffer.copyData(device.handle, device.commandPool, device.queue);
-  indexBuffer.copyData(device.handle, device.commandPool, device.queue);
+  quadBuffers.copyData(device.handle, device.commandPool, device.queue);
 }
 
 void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer, size_t framebufferIndex) const {
@@ -49,13 +47,13 @@ void Graphics::recordCommandBuffer(const vk::raii::CommandBuffer &commandBuffer,
           .setClearValues(clearValues),
       vk::SubpassContents::eInline);
   commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.handle);
-  commandBuffer.bindVertexBuffers(0, {*vertexBuffer.deviceBuffer.buffer}, {0});
-  commandBuffer.bindIndexBuffer(*indexBuffer.deviceBuffer.buffer, 0, vk::IndexType::eUint16);
+  commandBuffer.bindVertexBuffers(0, {*quadBuffers.vertexBuffer.deviceBuffer.buffer}, {0});
+  commandBuffer.bindIndexBuffer(*quadBuffers.indexBuffer.deviceBuffer.buffer, 0, vk::IndexType::eUint16);
   commandBuffer.bindDescriptorSets(
       vk::PipelineBindPoint::eGraphics, *pipeline.pipelineLayout, 0, {*frames[currentFrameIndex].descriptorSet}, {});
   commandBuffer.setViewport(0, viewports);
   commandBuffer.setScissor(0, scissors);
-  commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+  commandBuffer.drawIndexed(quad.indices.size(), 1, 0, 0, 0);
   commandBuffer.endRenderPass();
   commandBuffer.end();
 }

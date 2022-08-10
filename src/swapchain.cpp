@@ -121,9 +121,3 @@ Swapchain::Swapchain(const vkfw::Window &window,
       })),
       images(createImages(handle, device.handle, device.details.format.format)),
       framebuffers(createFramebuffers(renderPass, device.handle, images, extent)) {}
-
-Swapchain::Swapchain(const vkfw::Window &window,
-                     const vk::raii::SurfaceKHR &surface,
-                     const Device &device,
-                     const vk::raii::RenderPass &renderPass)
-    : Swapchain(window, surface, device, renderPass, VK_NULL_HANDLE) {}

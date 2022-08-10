@@ -1,10 +1,9 @@
 #pragma once
 
-#include <vector>
+#include <ranges>
 
 #include <vulkan/vulkan_raii.hpp>
 
-template <typename T>
 struct Buffer {
   const size_t size;
   const vk::raii::Buffer buffer;
@@ -17,31 +16,28 @@ struct Buffer {
          vk::MemoryPropertyFlags);
 };
 
-template <typename T>
-struct HostBuffer : Buffer<T> {
-  const std::vector<T> data;
+template <std::ranges::contiguous_range R>
+struct HostBuffer : Buffer {
+  const R data;
 
-  HostBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, const std::vector<T> &, vk::BufferUsageFlags);
+  HostBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, const R &, vk::BufferUsageFlags);
 
   void copyData() const;
 };
 
 template <typename T>
-struct DynamicHostBuffer : Buffer<T> {
+struct DynamicHostBuffer : Buffer {
   DynamicHostBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, vk::BufferUsageFlags);
 
   void copyData(const T &data) const;
 };
 
-template <typename T>
+template <std::ranges::contiguous_range R>
 struct StagedBuffer {
-  const HostBuffer<T> stagingBuffer;
-  const Buffer<T> deviceBuffer;
+  const HostBuffer<R> stagingBuffer;
+  const Buffer deviceBuffer;
 
-  StagedBuffer(const vk::raii::Device &,
-               const vk::raii::PhysicalDevice &,
-               const std::vector<T> &,
-               vk::BufferUsageFlags);
+  StagedBuffer(const vk::raii::Device &, const vk::raii::PhysicalDevice &, const R &, vk::BufferUsageFlags);
 
   void copyData(const vk::raii::Device &, const vk::raii::CommandPool &, const vk::raii::Queue &) const;
 };

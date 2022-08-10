@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+using Index = uint16_t;
+
 struct Vertex {
   static vk::VertexInputBindingDescription bindingDescription;
   static std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions;

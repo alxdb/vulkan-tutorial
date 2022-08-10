@@ -12,10 +12,9 @@ struct Swapchain {
   std::vector<vk::raii::ImageView> images;
   std::vector<vk::raii::Framebuffer> framebuffers;
 
-  Swapchain(const vkfw::Window &, const vk::raii::SurfaceKHR &, const Device &device, const vk::raii::RenderPass &);
   Swapchain(const vkfw::Window &,
             const vk::raii::SurfaceKHR &,
             const Device &device,
             const vk::raii::RenderPass &,
-            const vk::SwapchainKHR &);
+            const vk::SwapchainKHR & = VK_NULL_HANDLE);
 };
